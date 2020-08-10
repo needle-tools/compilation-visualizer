@@ -490,7 +490,7 @@ namespace Needle.CompilationVisualizer
                 var asmDefAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
 
                 var pi = string.IsNullOrEmpty(path) ? null : PackageInfo.FindForAssetPath(path);
-                Debug.Log("<b>" + Path.GetFileName(path) + "</b>" + " in " + (pi?.name ?? "Assets") +
+                var logString = "<b>" + Path.GetFileName(path) + "</b>" + " in " + (pi?.name ?? "Assets") +
                           "\n\n<i>Assembly References</i>:\n- " +
                           string.Join("\n- ",
                               asm.assemblyReferences.Select(x => x.name)
@@ -505,8 +505,15 @@ namespace Needle.CompilationVisualizer
                               asm.compiledAssemblyReferences.Select(x =>
                                   Path.GetFileName(x) + "   <color=#ffffff" + "55>" + Path.GetDirectoryName(x) +
                                   "</color>")
-                          ),
-                    asmDefAsset);
+                          );
+                // Workaround for console log length limitations
+                if (logString.Length > 15000) {
+                    var colorMarker = "</color";
+                    logString = logString.Substring(0, 15000);
+                    logString = logString.Substring(0, logString.LastIndexOf(colorMarker) + colorMarker.Length + 1) + "\n\n<b>(truncated)</b>";
+                }
+                
+                Debug.Log(logString, asmDefAsset);
 
                 // EditorGUIUtility.PingObject(asmDefAsset);
             }
