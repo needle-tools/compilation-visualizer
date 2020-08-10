@@ -50,7 +50,7 @@ namespace Needle.CompilationVisualizer
             */
 
             if (threadCountMultiplier > 1) {
-                // HACK: set thread count for compilation "UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface"
+                // EXPERIMENT: set thread count for compilation "UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface"
                 var eci = Type.GetType(
                     "UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface, UnityEditor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
                 if (eci != null) {
