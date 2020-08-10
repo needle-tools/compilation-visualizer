@@ -1,0 +1,25 @@
+{
+    "name": "com.needle.compilation-visualizer",
+    "displayName": "Compilation Visualizer",
+    "version": "1.0.0",
+    "author": {
+      "name": "hybridherbst",
+      "email": "felix@needle.tools",
+      "url": "https://needle.tools"
+    },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/needle-tools/compilation-visualizer.git"
+    },
+    "unity": "2019.3",
+    "description": "Provides console logging and a debug window for Assembly compilation. Allows to visualize compilation times and dependencies between assemblies.",
+    "keywords": [
+      "compilation",
+      "visualization",
+      "editor",
+      "debugging"
+    ],
+    "type": "tool",
+    "dependencies": {},
+    "samples": []
+  }
