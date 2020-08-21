@@ -148,22 +148,23 @@ namespace Needle.CompilationVisualizer
 
         private void CompilationFinished(object obj) {
             Refresh();
-            // if(allowRefresh)
-            {
-                // clear caches
-                assemblies.Clear();
-                assemblyDependencyDict.Clear();
-                assemblyDependantDict.Clear();
-
-                // clear selection if not in result data
-                if (selectedEntry != null &&
-                    !data.compilationData.Any(x => selectedEntry.Equals(x.assembly, StringComparison.Ordinal)))
-                    selectedEntry = null;
-            }
+            ClearCaches();
         }
 
         private void AfterAssemblyReload() {
             Refresh();
+            ClearCaches();
+        }
+
+        private void ClearCaches() {
+            assemblies.Clear();
+            assemblyDependencyDict.Clear();
+            assemblyDependantDict.Clear();
+
+            // clear selection if not in result data
+            if (selectedEntry != null &&
+                !data.compilationData.Any(x => selectedEntry.Equals(x.assembly, StringComparison.Ordinal)))
+                selectedEntry = null;
         }
 
         private float k_LineHeight = 20;
