@@ -24,8 +24,10 @@ namespace Needle.CompilationVisualizer
         }
 
         static CompilationAnalysis() {
+            #if UNITY_2019_1_OR_NEWER
             CompilationPipeline.compilationStarted += OnCompilationStarted;
             CompilationPipeline.compilationFinished += OnCompilationFinished;
+            #endif
             CompilationPipeline.assemblyCompilationStarted += OnAssemblyCompilationStarted;
             CompilationPipeline.assemblyCompilationFinished += OnAssemblyCompilationFinished;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
@@ -35,7 +37,8 @@ namespace Needle.CompilationVisualizer
         private static void OnCompilationStarted(object o) {
             if(AllowLogging) Debug.Log("Compilation Started at " + DateTime.Now);
             var data = new CompilationData {
-                CompilationStarted = DateTime.Now
+                CompilationStarted = DateTime.Now,
+                CompilationFinished = DateTime.MinValue
             };
             CompilationData.Write(data);
         }
@@ -43,13 +46,27 @@ namespace Needle.CompilationVisualizer
         private static void OnCompilationFinished(object o) {
             if(AllowLogging) Debug.Log("Compilation Finished at " + DateTime.Now);
             var data = CompilationData.Get();
+            #if UNITY_2019_1_OR_NEWER
             data.CompilationFinished = DateTime.Now;
+            #else
+            // we need to guess: last end time of all compiled assemblies
+            data.CompilationFinished = data.compilationData.Max(x => x.EndTime);
+            #endif
             CompilationData.Write(data);
         }
         
         private static void OnAssemblyCompilationStarted(string assembly)
         {
             var data = CompilationData.Get();
+            // need to detect compilation start manually
+            #if !UNITY_2019_1_OR_NEWER
+            if (data.compilationFinished != DateTime.MinValue)
+            {
+                // this should be the start of a new compilation
+                OnCompilationStarted(null);
+                data = CompilationData.Get();
+            }
+            #endif
             var compilationData = data.compilationData.FirstOrDefault(x => x.assembly == assembly);
             if(compilationData == null) {
                 compilationData = new CompilationData.AssemblyCompilationData() {
@@ -86,6 +103,16 @@ namespace Needle.CompilationVisualizer
 
         private static void OnAfterAssemblyReload() {
             var data = CompilationData.Get();
+            
+            #if !UNITY_2019_1_OR_NEWER
+            // manual compilation end check
+            if (data.CompilationFinished == DateTime.MinValue)
+            {
+                OnCompilationFinished(null);
+                data = CompilationData.Get();
+            }
+            #endif
+            
             data.AfterAssemblyReload = DateTime.Now;
             CompilationData.Write(data);
 

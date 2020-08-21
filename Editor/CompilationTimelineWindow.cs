@@ -27,7 +27,9 @@ namespace Needle.CompilationVisualizer
         public CompilationAnalysis.CompilationData data;
 
         private void OnEnable() {
+            #if UNITY_2019_1_OR_NEWER
             CompilationPipeline.compilationFinished += CompilationFinished;
+            #endif
             AssemblyReloadEvents.afterAssemblyReload += AfterAssemblyReload;
             CompilationPipeline.assemblyCompilationFinished += AssemblyCompilationFinished;
 
@@ -85,7 +87,9 @@ namespace Needle.CompilationVisualizer
         }
 
         private void OnDisable() {
+            #if UNITY_2019_1_OR_NEWER
             CompilationPipeline.compilationFinished -= CompilationFinished;
+            #endif
             AssemblyReloadEvents.afterAssemblyReload -= AfterAssemblyReload;
         }
 
@@ -177,11 +181,13 @@ namespace Needle.CompilationVisualizer
                 data = CompilationAnalysis.CompilationData.Get();
             }
 
+            #if UNITY_2019_1_OR_NEWER
             if (GUILayout.Button("Recompile", EditorStyles.toolbarButton)) {
                 // this re-compiles everything
                 CompilationPipeline.RequestScriptCompilation();
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
+            #endif
 
             EditorGUILayout.Space();
             allowRefresh = GUILayout.Toggle(allowRefresh, "Auto Refresh", EditorStyles.toolbarButton);
@@ -229,13 +235,18 @@ namespace Needle.CompilationVisualizer
 
             if (Event.current.type == EventType.Repaint) {
                 // draw time header
-                Styles.background.Draw(rect, false, false, false, false);
+                var backgroundRect = rect;
+                // not sure why, but Profiler background style is weird on 2018.4
+                #if !UNITY_2019_1_OR_NEWER
+                backgroundRect.xMin -= 200;
+                backgroundRect.width += 200;
+                #endif
+                Styles.background.Draw(backgroundRect, false, false, false, false);
                 DrawTimeHeader(viewRect, scrollPosition, (float) totalSeconds * 1000f);
             }
 
             rect.yMin += 20;
             viewRect.height = Mathf.Max(viewRect.height, rect.height); // - 15); // scrollbar height
-
 
             if (gotSelection) {
                 selectedScrollPosition = GUI.BeginScrollView(rect, selectedScrollPosition, viewRect);
@@ -383,6 +394,7 @@ namespace Needle.CompilationVisualizer
                 // scrollPosition.x -= (scrollDelta * 0.01f * (1 - lerp)) * viewRect.width;
                 
                 Repaint();
+                
                 */
             }
 
@@ -404,7 +416,7 @@ namespace Needle.CompilationVisualizer
                 multiplier = 0.2f;
 
             var linesPerSecond = 1f * multiplier;
-            var lineCount = (int) (totalSeconds * linesPerSecond) + 1;
+            var lineCount = (int) (totalSeconds * linesPerSecond) + 2;
             var lineDistance = viewRect.width / (totalSeconds * linesPerSecond);
 
             var vr = viewRect;
@@ -433,7 +445,7 @@ namespace Needle.CompilationVisualizer
             // just draw a line per second
             // left is always 0
             var totalSeconds = totalMilliseconds / 1000f;
-            var lineCount = (int) (totalSeconds * linesPerSecond) + 1;
+            var lineCount = (int) (totalSeconds * linesPerSecond) + 2;
             var lineDistance = viewRect.width / (totalSeconds * linesPerSecond);
 
             GUI.color = new Color(1, 1, 1, 0.1f);
@@ -488,8 +500,15 @@ namespace Needle.CompilationVisualizer
                 }
 
                 var asmDefAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
-
-                var pi = string.IsNullOrEmpty(path) ? null : PackageInfo.FindForAssetPath(path);
+                
+                var pi = string.IsNullOrEmpty(path) ?
+                    null :
+                    #if UNITY_2019_1_OR_NEWER
+                    PackageInfo.FindForAssetPath(path);
+                    #else
+                    default(PackageInfo);
+                    #endif
+                
                 var logString = "<b>" + Path.GetFileName(path) + "</b>" + " in " + (pi?.name ?? "Assets") +
                           "\n\n<i>Assembly References</i>:\n- " +
                           string.Join("\n- ",
@@ -510,7 +529,7 @@ namespace Needle.CompilationVisualizer
                 if (logString.Length > 15000) {
                     var colorMarker = "</color";
                     logString = logString.Substring(0, 15000);
-                    logString = logString.Substring(0, logString.LastIndexOf(colorMarker) + colorMarker.Length + 1) + "\n\n<b>(truncated)</b>";
+                    logString = logString.Substring(0, logString.LastIndexOf(colorMarker, StringComparison.Ordinal) + colorMarker.Length + 1) + "\n\n<b>(truncated)</b>";
                 }
                 
                 Debug.Log(logString, asmDefAsset);
