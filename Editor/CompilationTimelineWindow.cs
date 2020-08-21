@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Needle.EditorGUIUtility;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
@@ -12,7 +13,7 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace Needle.CompilationVisualizer
 {
-    internal class CompilationTimelineWindow : EditorWindow
+    internal class CompilationTimelineWindow : EditorWindow, IHasCustomMenu
     {
         [MenuItem("Window/Analysis/Compilation Timeline")]
         static void Init() {
@@ -21,7 +22,10 @@ namespace Needle.CompilationVisualizer
             win.Show();
         }
 
-        public bool allowRefresh = true;
+        // public bool allowRefresh = true;
+        internal bool allowRefresh => !lockTracker.isLocked;
+        
+        public EditorLockTracker lockTracker = new EditorLockTracker();
         public bool compactDrawing = true;
         public int threadCountMultiplier = 1;
         public CompilationAnalysis.CompilationData data;
@@ -50,6 +54,8 @@ namespace Needle.CompilationVisualizer
                 }
             }
             */
+            
+            lockTracker.lockStateChanged.AddListener(OnLockStateChanged);
 
             if (threadCountMultiplier > 1) {
                 // EXPERIMENT: set thread count for compilation "UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface"
@@ -68,6 +74,12 @@ namespace Needle.CompilationVisualizer
             Refresh();
         }
 
+        private void OnLockStateChanged(bool locked)
+        {
+            if(!locked)
+                data = CompilationAnalysis.CompilationData.Get();
+        }
+
         private bool AllowLogging {
             get => CompilationAnalysis.AllowLogging;
             set => CompilationAnalysis.AllowLogging = value;
@@ -84,6 +96,7 @@ namespace Needle.CompilationVisualizer
             public readonly GUIStyle overflowMiniLabel = new GUIStyle(EditorStyles.miniLabel) {
                 clipping = TextClipping.Overflow
             };
+            public readonly GUIStyle lockButton = "IN LockButton";
         }
 
         private void OnDisable() {
@@ -178,10 +191,6 @@ namespace Needle.CompilationVisualizer
 
         private void OnGUI() {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
-            if (GUILayout.Button("Refresh", EditorStyles.toolbarButton)) {
-                data = CompilationAnalysis.CompilationData.Get();
-            }
-
             #if UNITY_2019_1_OR_NEWER
             if (GUILayout.Button("Recompile", EditorStyles.toolbarButton)) {
                 // this re-compiles everything
@@ -191,9 +200,8 @@ namespace Needle.CompilationVisualizer
             #endif
 
             EditorGUILayout.Space();
-            allowRefresh = GUILayout.Toggle(allowRefresh, "Auto Refresh", EditorStyles.toolbarButton);
             compactDrawing = GUILayout.Toggle(compactDrawing, "Compact", EditorStyles.toolbarButton);
-            AllowLogging = GUILayout.Toggle(AllowLogging, "Logging", EditorStyles.toolbarButton);
+            AllowLogging = GUILayout.Toggle(AllowLogging, new GUIContent("Logging", "Log additional compilation data to the console on compilation"), EditorStyles.toolbarButton);
 
             if (data == null) return;
 
@@ -612,6 +620,14 @@ namespace Needle.CompilationVisualizer
             // var pi = PackageInfo.FindForAssembly()
             return new GUIContent(shortName,
                 shortName + "\n" + (c.EndTime - c.StartTime).TotalSeconds.ToString("0.###s"));
+        }
+
+        public void AddItemsToMenu(GenericMenu menu) {
+            lockTracker.AddItemsToMenu(menu);
+        }
+        
+        protected virtual void ShowButton(Rect r) {
+            lockTracker.ShowButton(r, Styles.lockButton);
         }
     }
 }
