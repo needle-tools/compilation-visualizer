@@ -16,6 +16,8 @@ You can open the **Compilation Visualizer** by selecting `Window > Analysis > Co
 
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/compact-view-recompile.gif)
 
+If you want to trigger a recompile, you can either use the "Recompile" button, or `Right Click > Reimport` a script or folder with scripts to cause that to be recompiled.  
+
 ## Screenshots
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view-recompile.gif)
 
@@ -26,9 +28,6 @@ You can open the **Compilation Visualizer** by selecting `Window > Analysis > Co
 
 ## Compatibility to 2018.4, 2019.1, 2019.2
 While most functionality works great those versions, some minor things are different:
-- no "Recompile" button for now as `CompilationPipeline.RequestScriptCompilation` doesn't exist. You can always `Right Click > Reimport` an asmdef or script to cause a recompile.  
-_Future Work: could manually set scripts dirty from code._  
-
 - slightly less accurate total compilation time on 2018.4 — 2019.1+ has events for the entire compilation while on 2018.4 the last finished assembly compilation is used as end date.
 - no PackageInfo for now on 2018.4/2019.1 as `PackageInfo.FindForAsset` doesn't exist.  
 _Future Work: there's ways to still find the right package._
