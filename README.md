@@ -20,7 +20,7 @@ If you want to trigger a recompile, you can either use the "Recompile" button, o
 
 ## Screenshots
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view-recompile.gif)
-
+![Coloring Options](https://github.com/needle-tools/compilation-visualizer/wiki/images/coloring-options.gif)
 ![Compact View](https://github.com/needle-tools/compilation-visualizer/wiki/images/compact-view.png)
 ![Compact View with selected assembly](https://github.com/needle-tools/compilation-visualizer/wiki/images/compact-view-selection.png)
 ![Expanded View](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view.png)
