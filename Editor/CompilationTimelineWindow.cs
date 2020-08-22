@@ -197,9 +197,9 @@ namespace Needle.CompilationVisualizer
                 CompilationPipeline.RequestScriptCompilation();
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
-            #endif
-
             EditorGUILayout.Space();
+            #endif
+            
             compactDrawing = GUILayout.Toggle(compactDrawing, "Compact", EditorStyles.toolbarButton);
             AllowLogging = GUILayout.Toggle(AllowLogging, new GUIContent("Logging", "Log additional compilation data to the console on compilation"), EditorStyles.toolbarButton);
 
