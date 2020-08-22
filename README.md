@@ -1,14 +1,20 @@
 # Compilation Visualizer for Unity
 
+![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202020.2-brightgreen)
+
+## What's this?
+This tool visualizes the assembly compilation process in Unity3D. It hooks into the Editor-provided events and nicely draws them on a timeline. That's especially helpful when trying to optimize compile times and dependencies between assemblies.  
+
+Besides showing a graphical view of compilation, selecting an assembly shows both dependencies and dependents of that assembly.  
+
+The screenshots show full compilations; but the timeline works as well for partial compilations (e.g. you changed a single script and Unity only recompiles the relevant parts of the dependency chain).
+
 ## Quick Start
 Install via OpenUPM: https://openupm.com/packages/com.needle.compilation-visualizer/
 
 You can open the **Compilation Visualizer** by selecting `Window > Analysis > Compilation Timeline`.
 
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/compact-view-recompile.gif)
-
-It shows a timeline of assembly compilation. This is especially helpful when trying to optimize compile times and dependencies between assemblies.
-Besides showing a graphical view of compilation, selecting an assembly shows both dependencies and dependents of that assembly.
 
 ## Screenshots
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view-recompile.gif)
