@@ -1,6 +1,6 @@
 # Compilation Visualizer for Unity
 
-![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202020.2-brightgreen)
+![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202020.2-brightgreen) [![openupm](https://img.shields.io/npm/v/com.needle.compilation-visualizer?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.needle.compilation-visualizer/)
 
 ## What's this?
 This tool visualizes the assembly compilation process in Unity3D. It hooks into the Editor-provided events and nicely draws them on a timeline. That's especially helpful when trying to optimize compile times and dependencies between assemblies.  
