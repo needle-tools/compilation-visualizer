@@ -527,7 +527,8 @@ namespace Needle.CompilationVisualizer
                     #else
                     default(PackageInfo);
                     #endif
-                
+
+                var editorPath = Path.GetDirectoryName(EditorApplication.applicationPath) + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar;
                 var logString = "<b>" + Path.GetFileName(path) + "</b>" + " in " + (pi?.name ?? "Assets") +
                           "\n\n<i>Assembly References</i>:\n- " +
                           string.Join("\n- ",
@@ -541,13 +542,13 @@ namespace Needle.CompilationVisualizer
                           "\n\n<i>Compiled Assembly References</i>:\n- " +
                           string.Join("\n- ",
                               asm.compiledAssemblyReferences.Select(x =>
-                                  Path.GetFileName(x) + "   <color=#ffffff" + "55>" + Path.GetDirectoryName(x) +
-                                  "</color>")
+                                  Path.GetFileName(x) + "   <color=#ffffff" + "55>" + Path.GetDirectoryName(x).Replace(editorPath, "") + "</color>")
                           );
                 // Workaround for console log length limitations
-                if (logString.Length > 15000) {
+                const int maxLogLength = 15000;
+                if (logString.Length > maxLogLength) {
                     var colorMarker = "</color";
-                    logString = logString.Substring(0, 15000);
+                    logString = logString.Substring(0, maxLogLength);
                     logString = logString.Substring(0, logString.LastIndexOf(colorMarker, StringComparison.Ordinal) + colorMarker.Length + 1) + "\n\n<b>(truncated)</b>";
                 }
                 
