@@ -23,9 +23,9 @@ namespace Needle.CompilationVisualizer
         }
 
         // public bool allowRefresh = true;
-        internal bool allowRefresh => !lockTracker.isLocked;
+        internal bool allowRefresh => !windowLockState.IsLocked;
         
-        public EditorLockTracker lockTracker = new EditorLockTracker();
+        public EditorWindowLockState windowLockState = new EditorWindowLockState();
         public bool compactDrawing = true;
         public int threadCountMultiplier = 1;
         public CompilationAnalysis.CompilationData data;
@@ -55,7 +55,7 @@ namespace Needle.CompilationVisualizer
             }
             */
             
-            lockTracker.lockStateChanged.AddListener(OnLockStateChanged);
+            windowLockState.lockStateChanged.AddListener(OnLockStateChanged);
 
             if (threadCountMultiplier > 1) {
                 // EXPERIMENT: set thread count for compilation "UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface"
@@ -623,11 +623,11 @@ namespace Needle.CompilationVisualizer
         }
 
         public void AddItemsToMenu(GenericMenu menu) {
-            lockTracker.AddItemsToMenu(menu);
+            windowLockState.AddItemsToMenu(menu);
         }
         
         protected virtual void ShowButton(Rect r) {
-            lockTracker.ShowButton(r, Styles.lockButton);
+            windowLockState.ShowButton(r, Styles.lockButton);
         }
     }
 }
