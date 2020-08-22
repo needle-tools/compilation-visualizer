@@ -191,14 +191,12 @@ namespace Needle.CompilationVisualizer
 
         private void OnGUI() {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
-            #if UNITY_2019_3_OR_NEWER
-            if (GUILayout.Button("Recompile", EditorStyles.toolbarButton)) {
-                // this re-compiles everything
-                CompilationPipeline.RequestScriptCompilation();
+            if (GUILayout.Button("Recompile", EditorStyles.toolbarButton))
+            {
+                RecompileEverything();
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
             EditorGUILayout.Space();
-            #endif
             
             compactDrawing = GUILayout.Toggle(compactDrawing, "Compact", EditorStyles.toolbarButton);
             AllowLogging = GUILayout.Toggle(AllowLogging, new GUIContent("Logging", "Log additional compilation data to the console on compilation"), EditorStyles.toolbarButton);
@@ -410,6 +408,18 @@ namespace Needle.CompilationVisualizer
             GUI.EndScrollView();
         }
 
+        void RecompileEverything()
+        {
+#if UNITY_2019_3_OR_NEWER
+            CompilationPipeline.RequestScriptCompilation();
+#elif UNITY_2017_1_OR_NEWER
+             var editorAssembly = System.Reflection.Assembly.GetAssembly(typeof(Editor));
+             var editorCompilationInterfaceType = editorAssembly?.GetType("UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface");
+             var dirtyAllScriptsMethod = editorCompilationInterfaceType?.GetMethod("DirtyAllScripts", BindingFlags.Static | BindingFlags.Public);
+             dirtyAllScriptsMethod?.Invoke(editorCompilationInterfaceType, null);
+#endif
+        }
+        
         void DrawTimeHeader(Rect viewRect, Vector2 scroll, float totalMilliseconds) {
             var totalSeconds = totalMilliseconds / 1000f;
 
