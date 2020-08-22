@@ -570,9 +570,11 @@ namespace Needle.CompilationVisualizer
                 // Workaround for console log length limitations
                 const int maxLogLength = 15000;
                 if (logString.Length > maxLogLength) {
-                    var colorMarker = "</color";
+                    var colorMarker = "</color>";
                     logString = logString.Substring(0, maxLogLength);
-                    logString = logString.Substring(0, logString.LastIndexOf(colorMarker, StringComparison.Ordinal) + colorMarker.Length + 1) + "\n\n<b>(truncated)</b>";
+                    int substringLength = logString.LastIndexOf(colorMarker, StringComparison.Ordinal) + colorMarker.Length;
+                    if(substringLength <= logString.Length)
+                        logString = logString.Substring(0,  substringLength) + "\n\n<b>(truncated)</b>";
                 }
                 
                 Debug.Log(logString, asmDefAsset);
