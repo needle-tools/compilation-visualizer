@@ -184,6 +184,15 @@ namespace Needle.CompilationVisualizer
         private float k_SkippedHeight = 4;
         private float lastTotalHeight = 200;
 
+        internal enum ColorMode {
+            CompilationDuration,
+            DependantCount,
+            DependencyCount
+        }
+
+        [SerializeField]
+        internal ColorMode colorMode = ColorMode.CompilationDuration;
+        
         // private Vector2 normalizedTimeView = new Vector2(0, 1);
 
         // slot ID (height index) to current end time
@@ -200,7 +209,7 @@ namespace Needle.CompilationVisualizer
             
             compactDrawing = GUILayout.Toggle(compactDrawing, "Compact", EditorStyles.toolbarButton);
             AllowLogging = GUILayout.Toggle(AllowLogging, new GUIContent("Logging", "Log additional compilation data to the console on compilation"), EditorStyles.toolbarButton);
-
+            colorMode = (ColorMode) EditorGUILayout.EnumPopup(colorMode, GUILayout.ExpandWidth(false));
             if (data == null) return;
 
             var totalCompilationSpan = data.CompilationFinished - data.CompilationStarted;
@@ -317,7 +326,23 @@ namespace Needle.CompilationVisualizer
                 var x = (float) (xSpan.TotalSeconds / totalSeconds) * totalWidth;
                 var w = (float) (wSpan.TotalSeconds / totalSeconds) * totalWidth;
 
-                var color = ColorFromDuration((float) wSpan.TotalSeconds);
+                var color = Color.white;
+                switch (colorMode)
+                {
+                    case ColorMode.DependantCount:
+                        if (AssemblyDependantDict.TryGetValue(c.assembly, out var dependantAssemblyList)) {
+                            color = ColorFromValue(dependantAssemblyList.Count, 0f, 5f, 0.3f);
+                        }
+                        break;
+                    case ColorMode.DependencyCount:
+                        if (AssemblyDependencyDict.TryGetValue(c.assembly, out var assembly)) {
+                            color = ColorFromValue(assembly.assemblyReferences.Length, 0f, 10f, 0.3f);
+                        }
+                        break;
+                    default:
+                        color = ColorFromValue((float) wSpan.TotalSeconds, 0.5f, 5f, 0.3f);
+                        break;
+                }
 
                 // stacking: find free slots to place entries
                 var freeSlots = GraphSlots.Where(slot => slot.Value + 0 < x).ToList();
@@ -469,15 +494,14 @@ namespace Needle.CompilationVisualizer
 
             GUI.color = new Color(1, 1, 1, 0.1f);
             for (int i = 0; i < lineCount; i++) {
-                GUI.DrawTexture(new Rect(i * lineDistance + viewRect.xMin, viewRect.yMin, 1, viewRect.height),
-                    Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(i * lineDistance + viewRect.xMin, viewRect.yMin, 1, viewRect.height), Texture2D.whiteTexture);
             }
 
             GUI.color = Color.white;
         }
 
-        Color ColorFromDuration(float seconds) {
-            return Color.HSVToRGB(Mathf.InverseLerp(5f, 0.5f, seconds) * 0.25f, 0.3f, 0.3f);
+        Color ColorFromValue(float value, float min = 0.5f, float max = 5f, float hueRange = 0.25f) {
+            return Color.HSVToRGB(Mathf.InverseLerp(max, min, value) * hueRange, 0.3f, 0.3f);
         }
 
         public Vector2 scrollPosition;
@@ -486,8 +510,7 @@ namespace Needle.CompilationVisualizer
 
         readonly Dictionary<string, Rect> entryRects = new Dictionary<string, Rect>();
 
-        private void DrawEntry(CompilationAnalysis.CompilationData.AssemblyCompilationData c, Rect localRect,
-            Color color, bool overflowLabel) {
+        private void DrawEntry(CompilationAnalysis.CompilationData.AssemblyCompilationData c, Rect localRect, Color color, bool overflowLabel) {
             localRect.xMin += 0.5f;
             localRect.xMax -= 0.5f;
             localRect.yMin += 0.5f;
