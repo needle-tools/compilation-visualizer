@@ -4,6 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [1.1.1] - 2020-08-22
 - re-added Recompile button for older Unity versions through reflection
+- simplified logging of precompiled assembly reference paths
 
 ## [1.1.0] - 2020-08-22
 - added support for 2018.4, 2019.1, 2019.2
