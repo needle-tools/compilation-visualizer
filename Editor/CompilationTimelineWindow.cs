@@ -512,7 +512,7 @@ namespace Needle.CompilationVisualizer
                 
                 var pi = string.IsNullOrEmpty(path) ?
                     null :
-                    #if UNITY_2019_1_OR_NEWER
+                    #if UNITY_2019_2_OR_NEWER
                     PackageInfo.FindForAssetPath(path);
                     #else
                     default(PackageInfo);
