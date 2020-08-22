@@ -24,6 +24,15 @@ You can open the **Compilation Visualizer** by selecting `Window > Analysis > Co
 ![Expanded View](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view.png)
 ![Expanded view with selected assembly](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view-selection.png)
 
+## Compatibility to 2018.4 LTS
+While most functionality works great in 2018.4 LTS, some minor things are different:
+- no "Recompile" button for now as `CompilationPipeline.RequestScriptCompilation` doesn't exist. You can always `Right Click > Reimport` an asmdef or script to cause a recompile.  
+_Future Work: could manually set scripts dirty from code._  
+
+- slightly less accurate total compilation time — 2019.1+ has events for the entire compilation while on 2018.4 the last finished assembly compilation is used as end date.
+- no PackageInfo for now on 2018.4 as `PackageInfo.FindForAsset` doesn't exist.  
+_Future Work: there's ways to still find the right package._
+
 ## Contact
 <b>[needle — tools for unity](https://needle.tools)</b> • 
 [@NeedleTools](https://twitter.com/NeedleTools) • 

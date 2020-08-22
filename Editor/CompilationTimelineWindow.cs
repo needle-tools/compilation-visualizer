@@ -191,7 +191,7 @@ namespace Needle.CompilationVisualizer
 
         private void OnGUI() {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
-            #if UNITY_2019_1_OR_NEWER
+            #if UNITY_2019_3_OR_NEWER
             if (GUILayout.Button("Recompile", EditorStyles.toolbarButton)) {
                 // this re-compiles everything
                 CompilationPipeline.RequestScriptCompilation();
@@ -245,8 +245,8 @@ namespace Needle.CompilationVisualizer
             if (Event.current.type == EventType.Repaint) {
                 // draw time header
                 var backgroundRect = rect;
-                // not sure why, but Profiler background style is weird on 2018.4
-                #if !UNITY_2019_1_OR_NEWER
+                // not sure why, but Profiler background style is weird pre-New UI
+                #if !UNITY_2019_3_OR_NEWER
                 backgroundRect.xMin -= 200;
                 backgroundRect.width += 200;
                 #endif
