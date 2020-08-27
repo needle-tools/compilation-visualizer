@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
@@ -36,11 +37,20 @@ namespace Needle.CompilationVisualizer
 
         private static void OnCompilationStarted(object o) {
             if(AllowLogging) Debug.Log("Compilation Started at " + DateTime.Now);
-            var data = new CompilationData {
-                CompilationStarted = DateTime.Now,
-                CompilationFinished = DateTime.MinValue
-            };
-            CompilationData.Write(data);
+            
+            // check if this is very shortly after a previous compilation and assume this is an iterative compilation
+            var data = CompilationData.Get();
+            // check time difference
+            var timeSpan = (DateTime.Now - data.AfterAssemblyReload);
+            Debug.Log("Time since last assembly reload: " + timeSpan);
+            
+            if(timeSpan.TotalSeconds > 5) {
+                data = new CompilationData {
+                    CompilationStarted = DateTime.Now,
+                    CompilationFinished = DateTime.MinValue
+                };
+                CompilationData.Write(data);
+            }
         }
 
         private static void OnCompilationFinished(object o) {
@@ -67,14 +77,15 @@ namespace Needle.CompilationVisualizer
                 data = CompilationData.Get();
             }
             #endif
-            var compilationData = data.compilationData.FirstOrDefault(x => x.assembly == assembly);
-            if(compilationData == null) {
-                compilationData = new CompilationData.AssemblyCompilationData() {
+            // var compilationData = data.compilationData.FirstOrDefault(x => x.assembly == assembly);
+            // if(compilationData == null)
+            // {
+                var compilationData = new CompilationData.AssemblyCompilationData() {
                     assembly = assembly,
                     StartTime = DateTime.Now
                 };
                 data.compilationData.Add(compilationData);
-            }
+            // }
             
             compilationData.StartTime = DateTime.Now;
             CompilationData.Write(data);
@@ -83,7 +94,7 @@ namespace Needle.CompilationVisualizer
         private static void OnAssemblyCompilationFinished(string assembly, CompilerMessage[] arg2)
         {
             var data = CompilationData.Get();
-            var compilationData = data.compilationData.FirstOrDefault(x => x.assembly == assembly);
+            var compilationData = data.compilationData.LastOrDefault(x => x.assembly == assembly);
             if(compilationData == null) {
                 Debug.LogError("Compilation finished for " + assembly + ", but no startTime found!");
                 return;
@@ -121,10 +132,12 @@ namespace Needle.CompilationVisualizer
             Debug.Log("After Assembly Reload at " + DateTime.Now);
             
             var compilationSpan = data.CompilationFinished - data.CompilationStarted;
-            Debug.Log("<b>Compilation Report</b> - Total Time: " + compilationSpan);
+            var sb = new StringBuilder();
+            sb.AppendLine("<b>Compilation Report</b> - Total Time: " + compilationSpan);
             foreach (var d in data.compilationData) {
-                Debug.Log(d);
+                sb.AppendLine(d.ToString());
             }
+            Debug.Log(sb);
 
             var span = data.AfterAssemblyReload - data.BeforeAssemblyReload;
             Debug.Log("<b>Assembly Reload</b> - Total Time: " + span);
