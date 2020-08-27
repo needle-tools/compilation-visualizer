@@ -28,7 +28,7 @@ namespace Needle.CompilationVisualizer
         public EditorWindowLockState windowLockState = new EditorWindowLockState();
         public bool compactDrawing = true;
         public int threadCountMultiplier = 1;
-        public CompilationAnalysis.CompilationData data;
+        public CompilationAnalysis.IterativeCompilationData data;
 
         private void OnEnable() {
             #if UNITY_2019_1_OR_NEWER
@@ -77,7 +77,7 @@ namespace Needle.CompilationVisualizer
         private void OnLockStateChanged(bool locked)
         {
             if(!locked)
-                data = CompilationAnalysis.CompilationData.Get();
+                data = CompilationAnalysis.CompilationData.GetAll();
         }
 
         private bool AllowLogging {
@@ -109,7 +109,7 @@ namespace Needle.CompilationVisualizer
         private void Refresh() {
             // Debug.Log("should refresh, allowed: " + allowRefresh);
             if (allowRefresh) {
-                data = CompilationAnalysis.CompilationData.Get();
+                data = CompilationAnalysis.CompilationData.GetAll();
                 Repaint();
             }
         }
@@ -176,7 +176,7 @@ namespace Needle.CompilationVisualizer
 
             // clear selection if not in result data
             if (selectedEntry != null &&
-                !data.compilationData.Any(x => selectedEntry.Equals(x.assembly, StringComparison.Ordinal)))
+                !data.iterations.Any(c => c.compilationData.Any(x => selectedEntry.Equals(x.assembly, StringComparison.Ordinal))))
                 selectedEntry = null;
         }
 
@@ -212,18 +212,30 @@ namespace Needle.CompilationVisualizer
             colorMode = (ColorMode) EditorGUILayout.EnumPopup(colorMode, GUILayout.ExpandWidth(false));
             if (data == null) return;
 
-            var totalCompilationSpan = data.CompilationFinished - data.CompilationStarted;
+            var totalSpan = data.iterations.Last().AfterAssemblyReload - data.iterations.First().CompilationStarted;
+            if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
+                totalSpan = DateTime.Now - data.iterations.First().compilationStarted;
+            
+            var totalCompilationSpan = data.iterations
+                .Select(item => item.CompilationFinished - item.CompilationStarted)
+                .Aggregate((result, item) => result + item);
             if (totalCompilationSpan.TotalSeconds < 0) // timespan adjusted during compilation
-                totalCompilationSpan = DateTime.Now - data.compilationStarted;
+                totalCompilationSpan = DateTime.Now - data.iterations.First().compilationStarted;
 
-            var totalReloadSpan = data.AfterAssemblyReload - data.BeforeAssemblyReload;
+            var totalReloadSpan = data.iterations
+                .Select(item => item.AfterAssemblyReload - item.BeforeAssemblyReload)
+                .Aggregate((result, item) => result + item);
 
             bool gotSelection = !string.IsNullOrEmpty(selectedEntry);
-
+            int totalCompiledAssemblyCount = data.iterations.Select(x => x.compilationData.Count).Sum();
+            
             GUILayout.FlexibleSpace();
+            GUILayout.Label("Total: " + totalSpan.TotalSeconds.ToString("F2") + "s");
             GUILayout.Label("Compilation: " + totalCompilationSpan.TotalSeconds.ToString("F2") + "s");
             GUILayout.Label("Reload: " + totalReloadSpan.TotalSeconds.ToString("F2") + "s");
-            GUILayout.Label("Compiled Assemblies: " + data.compilationData.Count);
+            GUILayout.Label("Compiled Assemblies: " + totalCompiledAssemblyCount);
+            if (data.iterations.Count > 1)
+                GUILayout.Label("Iterations: " + data.iterations.Count);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
@@ -233,10 +245,10 @@ namespace Needle.CompilationVisualizer
             var rect = new Rect(0, 0, position.width, position.height) {yMin = yMax};
 
             // var totalWidth = rect.width;
-            var totalSeconds = totalCompilationSpan.TotalSeconds;
+            var totalSeconds = totalSpan.TotalSeconds;
 
             var viewRect = rect;
-            viewRect.yMax = viewRect.yMin + k_LineHeight * data.compilationData.Count;
+            viewRect.yMax = viewRect.yMin + k_LineHeight * totalCompiledAssemblyCount;
             // totalWidth -= 15; // scrollbar
             viewRect.width -= 15;
             // viewRect.width *= normalizedTimeView.y;
@@ -282,7 +294,9 @@ namespace Needle.CompilationVisualizer
             // naive first pass: paint colored textures
             int nonSkippedIndex = 0;
             float currentHeight = yMax;
-            foreach (var c in data.compilationData) {
+            DateTime firstCompilationStarted = data.iterations.First().CompilationStarted;
+            foreach(var iterationData in data.iterations)
+            foreach (var c in iterationData.compilationData) {
                 bool skip = gotSelection;
                 // skip in selection mode
                 if (skip && selectedEntry != null) {
@@ -316,7 +330,7 @@ namespace Needle.CompilationVisualizer
                 // if (skip) continue;
 
                 var entryHeight = skip ? k_SkippedHeight : k_LineHeight;
-                var xSpan = c.StartTime - data.CompilationStarted;
+                var xSpan = c.StartTime - firstCompilationStarted;
                 var wSpan = c.EndTime - c.StartTime;
 
                 // continuous drawing during compilation - looks nicer
@@ -381,7 +395,8 @@ namespace Needle.CompilationVisualizer
 
             lastTotalHeight = currentHeight;
 
-            foreach (var c in data.compilationData) {
+            foreach(var iterationData in data.iterations)
+            foreach (var c in iterationData.compilationData) {
                 if (c.assembly != selectedEntry) continue;
 
                 var localRect = entryRects[c.assembly];

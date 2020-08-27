@@ -40,17 +40,25 @@ namespace Needle.CompilationVisualizer
             
             // check if this is very shortly after a previous compilation and assume this is an iterative compilation
             var data = CompilationData.Get();
-            // check time difference
-            var timeSpan = (DateTime.Now - data.AfterAssemblyReload);
-            Debug.Log("Time since last assembly reload: " + timeSpan);
-            
-            if(timeSpan.TotalSeconds > 5) {
-                data = new CompilationData {
-                    CompilationStarted = DateTime.Now,
-                    CompilationFinished = DateTime.MinValue
-                };
-                CompilationData.Write(data);
+            var isNewCompilation = true;
+            if(data != null) {
+                // check time difference
+                var timeSpan = (DateTime.Now - data.AfterAssemblyReload);
+                if (timeSpan.TotalSeconds < 5)
+                    isNewCompilation = false;
+                Debug.Log("Time since last assembly reload: " + timeSpan);
             }
+            
+            data = new CompilationData {
+                CompilationStarted = DateTime.Now,
+                CompilationFinished = DateTime.MinValue
+            };
+            
+            if(isNewCompilation)
+                CompilationData.Clear();
+            
+            CompilationData.Add();
+            CompilationData.Write(data);
         }
 
         private static void OnCompilationFinished(object o) {
@@ -86,7 +94,7 @@ namespace Needle.CompilationVisualizer
                 };
                 data.compilationData.Add(compilationData);
             // }
-            
+            if(AllowLogging) Debug.Log("Compilation started: " + "<b>" + assembly + "</b>" + " at " + DateTime.Now);
             compilationData.StartTime = DateTime.Now;
             CompilationData.Write(data);
         }
@@ -99,6 +107,11 @@ namespace Needle.CompilationVisualizer
                 Debug.LogError("Compilation finished for " + assembly + ", but no startTime found!");
                 return;
             }
+
+            if (AllowLogging) Debug.Log("Compilation finished: " + "<b>" + assembly + "</b>" + " at " + DateTime.Now);
+            if(AllowLogging && arg2 != null)
+                foreach(var arg in arg2)
+                    Debug.Log(arg.type + " / " + arg.message + " (Message for " + assembly + ")");
             
             compilationData.EndTime = DateTime.Now;
             CompilationData.Write(data);
@@ -141,6 +154,13 @@ namespace Needle.CompilationVisualizer
 
             var span = data.AfterAssemblyReload - data.BeforeAssemblyReload;
             Debug.Log("<b>Assembly Reload</b> - Total Time: " + span);
+        }
+
+        [Serializable]
+        public class IterativeCompilationData
+        {
+            public List<CompilationData> iterations = new List<CompilationData>();
+            public CompilationData Current => iterations.LastOrDefault();
         }
         
         [Serializable]
@@ -213,21 +233,30 @@ namespace Needle.CompilationVisualizer
             
             public List<AssemblyCompilationData> compilationData = new List<AssemblyCompilationData>();
 
-            private static CompilationData tempData = null;
-            
-            public static CompilationData Get() {
+            private static IterativeCompilationData tempData = null;
+            public static IterativeCompilationData GetAll() {
                 if (tempData != null) return tempData;
                 
                 if (!EditorPrefs.HasKey(EditorPrefStore)) {
-                    var sd = new CompilationData();
-                    Write(sd);
+                    var sd = new IterativeCompilationData();
+                    WriteAll(sd);
                 }
-                var restoredData = JsonUtility.FromJson<CompilationData>(EditorPrefs.GetString(EditorPrefStore));
+                var restoredData = JsonUtility.FromJson<IterativeCompilationData>(EditorPrefs.GetString(EditorPrefStore));
                 tempData = restoredData;
                 return tempData;
             }
 
+            public static CompilationData Get() {
+                return GetAll().iterations.LastOrDefault();
+            }
+
             public static void Write(CompilationData data) {
+                var all = GetAll();
+                all.iterations[all.iterations.Count - 1] = data;
+                WriteAll(all);
+            }
+
+            public static void WriteAll(IterativeCompilationData data) {
                 tempData = data;
                 var json = JsonUtility.ToJson(data, true);
                 EditorPrefs.SetString(EditorPrefStore, json);
@@ -247,6 +276,16 @@ namespace Needle.CompilationVisualizer
                 CompilationFinished = compilationFinished;
                 AfterAssemblyReload = afterAssemblyReload;
                 BeforeAssemblyReload = beforeAssemblyReload;
+            }
+
+            public static void Clear()
+            {
+                tempData.iterations.Clear();
+            }
+
+            public static void Add()
+            {
+                tempData.iterations.Add(new CompilationData());
             }
         }
         

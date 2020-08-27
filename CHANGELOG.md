@@ -2,6 +2,14 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.0-preview] - 2020-08-28
+- experimental support for iterative compilation (where compilation happens in multiple passes)
+  - seems there are some bugs in Unity around these
+  - incorrect compilation end times but correct compilation start times
+  - EditorWindows are refreshed on first iteration but subsequent iterations just block
+  - full AssemblyReload happens once for each iteration
+  - on 2020.2 sometimes there are up to 10 (!) iterations, slowing everything down considerably
+
 ## [1.1.2] - 2020-08-22
 - fixed logging edge case
 - added coloring options
