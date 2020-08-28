@@ -18,10 +18,15 @@ namespace Needle.CompilationVisualizer
     {
         private const string EditorPrefStore = "Needle.CompilationVisualizer.CompilationData";
 
-        private const string AllowLoggingPrefsKey = nameof(CompilationAnalysis) + "_" + nameof(AllowLogging);  
+        private const string AllowLoggingPrefsKey = nameof(CompilationAnalysis) + "_" + nameof(AllowLogging); 
+        private const string ShowAssemblyReloadsPrefsKey = nameof(CompilationAnalysis) + "_" + nameof(ShowAssemblyReloads); 
         public static bool AllowLogging {
-            get => EditorPrefs.HasKey(AllowLoggingPrefsKey) && EditorPrefs.GetBool(AllowLoggingPrefsKey);
+            get => EditorPrefs.HasKey(AllowLoggingPrefsKey) ? EditorPrefs.GetBool(AllowLoggingPrefsKey) : false;
             set => EditorPrefs.SetBool(AllowLoggingPrefsKey, value);
+        }
+        public static bool ShowAssemblyReloads {
+            get => EditorPrefs.HasKey(ShowAssemblyReloadsPrefsKey) ? EditorPrefs.GetBool(ShowAssemblyReloadsPrefsKey) : true;
+            set => EditorPrefs.SetBool(ShowAssemblyReloadsPrefsKey, value);
         }
 
         static CompilationAnalysis() {
@@ -46,7 +51,7 @@ namespace Needle.CompilationVisualizer
                 var timeSpan = (DateTime.Now - data.AfterAssemblyReload);
                 if (timeSpan.TotalSeconds < 5)
                     isNewCompilation = false;
-                Debug.Log("Time since last assembly reload: " + timeSpan);
+                // Debug.Log("Time since last assembly reload: " + timeSpan + "; is compiling: " + EditorApplication.isCompiling);
             }
             
             data = new CompilationData {
@@ -127,6 +132,7 @@ namespace Needle.CompilationVisualizer
 
         private static void OnAfterAssemblyReload() {
             var data = CompilationData.Get();
+            if (data == null) return;
             
             #if !UNITY_2019_1_OR_NEWER
             // manual compilation end check
@@ -280,7 +286,8 @@ namespace Needle.CompilationVisualizer
 
             public static void Clear()
             {
-                tempData.iterations.Clear();
+                // need to do a full clear in case a locked window wants to hold onto the old data
+                tempData = new IterativeCompilationData();
             }
 
             public static void Add()

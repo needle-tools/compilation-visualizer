@@ -23,7 +23,7 @@ namespace Needle.CompilationVisualizer
         }
 
         // public bool allowRefresh = true;
-        internal bool allowRefresh => !windowLockState.IsLocked;
+        private bool AllowRefresh => !windowLockState.IsLocked;
         
         public EditorWindowLockState windowLockState = new EditorWindowLockState();
         public bool compactDrawing = true;
@@ -83,6 +83,10 @@ namespace Needle.CompilationVisualizer
         private bool AllowLogging {
             get => CompilationAnalysis.AllowLogging;
             set => CompilationAnalysis.AllowLogging = value;
+        }  
+        private bool ShowAssemblyReloads {
+            get => CompilationAnalysis.ShowAssemblyReloads;
+            set => CompilationAnalysis.ShowAssemblyReloads = value;
         }
 
         private WindowStyles styles;
@@ -108,7 +112,7 @@ namespace Needle.CompilationVisualizer
 
         private void Refresh() {
             // Debug.Log("should refresh, allowed: " + allowRefresh);
-            if (allowRefresh) {
+            if (AllowRefresh) {
                 data = CompilationAnalysis.CompilationData.GetAll();
                 Repaint();
             }
@@ -198,10 +202,18 @@ namespace Needle.CompilationVisualizer
         // slot ID (height index) to current end time
         private static readonly Dictionary<int, float> GraphSlots = new Dictionary<int, float>();
 
-        private void OnGUI() {
+        private void OnGUI()
+        {
+            // data = CompilationAnalysis.CompilationData.GetAll();
+            
+            var gotData = data != null && data.iterations != null && data.iterations.Count > 0;
+            var gotSelection = !string.IsNullOrEmpty(selectedEntry);
+            
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             if (GUILayout.Button("Recompile", EditorStyles.toolbarButton))
             {
+                if(AllowRefresh)
+                    CompilationAnalysis.CompilationData.Clear();
                 RecompileEverything();
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
@@ -209,43 +221,52 @@ namespace Needle.CompilationVisualizer
             
             compactDrawing = GUILayout.Toggle(compactDrawing, "Compact", EditorStyles.toolbarButton);
             AllowLogging = GUILayout.Toggle(AllowLogging, new GUIContent("Logging", "Log additional compilation data to the console on compilation"), EditorStyles.toolbarButton);
+            ShowAssemblyReloads = GUILayout.Toggle(ShowAssemblyReloads, new GUIContent("Show Reloads", "Show or hide assembly reloads in the timeline."), EditorStyles.toolbarButton);
             colorMode = (ColorMode) EditorGUILayout.EnumPopup(colorMode, GUILayout.ExpandWidth(false));
-            if (data == null) return;
-
-            var totalSpan = data.iterations.Last().AfterAssemblyReload - data.iterations.First().CompilationStarted;
-            if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
-                totalSpan = DateTime.Now - data.iterations.First().compilationStarted;
             
-            var totalCompilationSpan = data.iterations
-                .Select(item => item.CompilationFinished - item.CompilationStarted)
-                .Aggregate((result, item) => result + item);
-            if (totalCompilationSpan.TotalSeconds < 0) // timespan adjusted during compilation
-                totalCompilationSpan = DateTime.Now - data.iterations.First().compilationStarted;
-
-            var totalReloadSpan = data.iterations
-                .Select(item => item.AfterAssemblyReload - item.BeforeAssemblyReload)
-                .Aggregate((result, item) => result + item);
-
-            bool gotSelection = !string.IsNullOrEmpty(selectedEntry);
-            int totalCompiledAssemblyCount = data.iterations.Select(x => x.compilationData.Count).Sum();
+            var totalSpan = TimeSpan.Zero;
+            var totalCompilationSpan = TimeSpan.Zero;
+            var totalCompiledAssemblyCount = 0;
             
             GUILayout.FlexibleSpace();
-            GUILayout.Label("Total: " + totalSpan.TotalSeconds.ToString("F2") + "s");
-            GUILayout.Label("Compilation: " + totalCompilationSpan.TotalSeconds.ToString("F2") + "s");
-            GUILayout.Label("Reload: " + totalReloadSpan.TotalSeconds.ToString("F2") + "s");
-            GUILayout.Label("Compiled Assemblies: " + totalCompiledAssemblyCount);
-            if (data.iterations.Count > 1)
-                GUILayout.Label("Iterations: " + data.iterations.Count);
-            GUILayout.FlexibleSpace();
+            if(gotData && data.iterations.Count > 0) {
+                totalSpan = data.iterations.Last().AfterAssemblyReload - data.iterations.First().CompilationStarted;
+                if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
+                    totalSpan = DateTime.Now - data.iterations.First().compilationStarted;
+                
+                totalCompilationSpan = data.iterations
+                    .Select(item => item.CompilationFinished - item.CompilationStarted)
+                    .Aggregate((result, item) => result + item);
+                           
+                if (totalCompilationSpan.TotalSeconds < 0) // timespan adjusted during compilation
+                    totalCompilationSpan = DateTime.Now - data.iterations.First().compilationStarted;
+
+                var totalReloadSpan = data.iterations
+                    .Select(item => item.AfterAssemblyReload - item.BeforeAssemblyReload)
+                    .Aggregate((result, item) => result + item);
+
+                totalCompiledAssemblyCount = data.iterations.Select(x => x.compilationData.Count).Sum();
+                
+                GUILayout.Label("Total: " + totalSpan.TotalSeconds.ToString("F2") + "s");
+                GUILayout.Label("Compilation: " + totalCompilationSpan.TotalSeconds.ToString("F2") + "s");
+                GUILayout.Label("Reload: " + totalReloadSpan.TotalSeconds.ToString("F2") + "s");
+                GUILayout.Label("Compiled Assemblies: " + totalCompiledAssemblyCount);
+                if (data.iterations.Count > 1)
+                    GUILayout.Label("Iterations: " + data.iterations.Count);
+                GUILayout.FlexibleSpace();
+            }
             GUILayout.EndHorizontal();
 
+            if (!gotData || data.iterations.Count == 0) return;
+
+            
             var yMax = GUILayoutUtility.GetLastRect().yMax;
 
             // start of draw area rect
             var rect = new Rect(0, 0, position.width, position.height) {yMin = yMax};
 
             // var totalWidth = rect.width;
-            var totalSeconds = totalSpan.TotalSeconds;
+            var totalSeconds = ShowAssemblyReloads ? totalSpan.TotalSeconds : totalCompilationSpan.TotalSeconds;
 
             var viewRect = rect;
             viewRect.yMax = viewRect.yMin + k_LineHeight * totalCompiledAssemblyCount;
@@ -295,104 +316,107 @@ namespace Needle.CompilationVisualizer
             int nonSkippedIndex = 0;
             float currentHeight = yMax;
             DateTime firstCompilationStarted = data.iterations.First().CompilationStarted;
-            foreach(var iterationData in data.iterations)
-            foreach (var c in iterationData.compilationData) {
-                bool skip = gotSelection;
-                // skip in selection mode
-                if (skip && selectedEntry != null) {
-                    if (selectedEntry == c.assembly) skip = false;
+            DateTime lastSectionEndTime = firstCompilationStarted;
+            
+            foreach(var iterationData in data.iterations) {
+                foreach (var c in iterationData.compilationData) {
+                    bool skip = gotSelection;
+                    // skip in selection mode
+                    if (skip && selectedEntry != null) {
+                        if (selectedEntry == c.assembly) skip = false;
 
-                    if (skip) {
-                        if (AssemblyDependantDict.TryGetValue(c.assembly, out var dependantAssemblyList)) {
-                            foreach (var a in dependantAssemblyList) {
-                                if (a == null) continue;
-                                if (selectedEntry.Equals(a.outputPath, StringComparison.Ordinal)) {
-                                    skip = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (skip) {
-                        if (AssemblyDependencyDict.TryGetValue(c.assembly, out var assembly)) {
-                            foreach (var a in assembly.assemblyReferences) {
-                                if (a == null) continue;
-                                if (selectedEntry.Equals(a.outputPath, StringComparison.Ordinal)) {
-                                    skip = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // if (skip) continue;
-
-                var entryHeight = skip ? k_SkippedHeight : k_LineHeight;
-                var xSpan = c.StartTime - firstCompilationStarted;
-                var wSpan = c.EndTime - c.StartTime;
-
-                // continuous drawing during compilation - looks nicer
-                if (wSpan.TotalSeconds < 0)
-                    wSpan = DateTime.Now - c.startTime;
-
-                var x = (float) (xSpan.TotalSeconds / totalSeconds) * totalWidth;
-                var w = (float) (wSpan.TotalSeconds / totalSeconds) * totalWidth;
-
-                var color = Color.white;
-                switch (colorMode)
-                {
-                    case ColorMode.DependantCount:
-                        if (AssemblyDependantDict.TryGetValue(c.assembly, out var dependantAssemblyList)) {
-                            color = ColorFromValue(dependantAssemblyList.Count, 0f, 5f, 0.3f);
-                        }
-                        break;
-                    case ColorMode.DependencyCount:
-                        if (AssemblyDependencyDict.TryGetValue(c.assembly, out var assembly)) {
-                            color = ColorFromValue(assembly.assemblyReferences.Length, 0f, 10f, 0.3f);
-                        }
-                        break;
-                    default:
-                        color = ColorFromValue((float) wSpan.TotalSeconds, 0.5f, 5f, 0.3f);
-                        break;
-                }
-
-                // stacking: find free slots to place entries
-                var freeSlots = GraphSlots.Where(slot => slot.Value + 0 < x).ToList();
-                int freeSlot;
-                if (freeSlots.Any()) {
-                    freeSlot = freeSlots.OrderByDescending(slot => x - slot.Value).First().Key;
-                }
-                else {
-                    if (GraphSlots.Any())
-                        freeSlot = GraphSlots.Last().Key + 1;
-                    else
-                        freeSlot = 0;
-                    GraphSlots.Add(freeSlot, x + w);
-                }
-
-                GraphSlots[freeSlot] = x + w;
-
-                var localRect = new Rect(x, k_LineHeight * (compactDrawing ? freeSlot : nonSkippedIndex) + yMax, w,
-                    entryHeight);
-                if (gotSelection) {
-                    if (compactDrawing) {
                         if (skip) {
-                            localRect.height = k_SkippedHeight;
-                            localRect.y += k_LineHeight - k_SkippedHeight;
+                            if (AssemblyDependantDict.TryGetValue(c.assembly, out var dependantAssemblyList)) {
+                                foreach (var a in dependantAssemblyList) {
+                                    if (a == null) continue;
+                                    if (selectedEntry.Equals(a.outputPath, StringComparison.Ordinal)) {
+                                        skip = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (skip) {
+                            if (AssemblyDependencyDict.TryGetValue(c.assembly, out var assembly)) {
+                                foreach (var a in assembly.assemblyReferences) {
+                                    if (a == null) continue;
+                                    if (selectedEntry.Equals(a.outputPath, StringComparison.Ordinal)) {
+                                        skip = false;
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
-                    else
-                        localRect.y = currentHeight;
+
+                    // if (skip) continue;
+
+                    var entryHeight = skip ? k_SkippedHeight : k_LineHeight;
+                    var xSpan = (c.StartTime - iterationData.CompilationStarted) + (lastSectionEndTime - firstCompilationStarted);
+                    var wSpan = c.EndTime - c.StartTime;
+
+                    // continuous drawing during compilation - looks nicer
+                    if (wSpan.TotalSeconds < 0)
+                        wSpan = DateTime.Now - c.startTime;
+
+                    var x = (float) (xSpan.TotalSeconds / totalSeconds) * totalWidth;
+                    var w = (float) (wSpan.TotalSeconds / totalSeconds) * totalWidth;
+
+                    var color = Color.white;
+                    switch (colorMode)
+                    {
+                        case ColorMode.DependantCount:
+                            if (AssemblyDependantDict.TryGetValue(c.assembly, out var dependantAssemblyList)) {
+                                color = ColorFromValue(dependantAssemblyList.Count, 0f, 5f, 0.3f);
+                            }
+                            break;
+                        case ColorMode.DependencyCount:
+                            if (AssemblyDependencyDict.TryGetValue(c.assembly, out var assembly)) {
+                                color = ColorFromValue(assembly.assemblyReferences.Length, 0f, 10f, 0.3f);
+                            }
+                            break;
+                        default:
+                            color = ColorFromValue((float) wSpan.TotalSeconds, 0.5f, 5f, 0.3f);
+                            break;
+                    }
+
+                    // stacking: find free slots to place entries
+                    var freeSlots = GraphSlots.Where(slot => slot.Value + 0 < x).ToList();
+                    int freeSlot;
+                    if (freeSlots.Any()) {
+                        freeSlot = freeSlots.OrderByDescending(slot => x - slot.Value).First().Key;
+                    }
+                    else {
+                        if (GraphSlots.Any())
+                            freeSlot = GraphSlots.Last().Key + 1;
+                        else
+                            freeSlot = 0;
+                        GraphSlots.Add(freeSlot, x + w);
+                    }
+
+                    GraphSlots[freeSlot] = x + w;
+
+                    var localRect = new Rect(x, k_LineHeight * (compactDrawing ? freeSlot : nonSkippedIndex) + yMax, w,
+                        entryHeight);
+                    if (gotSelection) {
+                        if (compactDrawing) {
+                            if (skip) {
+                                localRect.height = k_SkippedHeight;
+                                localRect.y += k_LineHeight - k_SkippedHeight;
+                            }
+                        }
+                        else
+                            localRect.y = currentHeight;
+                    }
+
+                    currentHeight += entryHeight;
+                    nonSkippedIndex++;
+                    entryRects[c.assembly] = localRect;
+                    DrawEntry(compilationData: iterationData, c, localRect, color, !compactDrawing || (compactDrawing && gotSelection));
                 }
-
-                currentHeight += entryHeight;
-                nonSkippedIndex++;
-                entryRects[c.assembly] = localRect;
-                DrawEntry(c, localRect, color, !compactDrawing || (compactDrawing && gotSelection));
+                lastSectionEndTime = ShowAssemblyReloads ? iterationData.AfterAssemblyReload : iterationData.CompilationFinished;
             }
-
             lastTotalHeight = currentHeight;
 
             foreach(var iterationData in data.iterations)
@@ -525,7 +549,8 @@ namespace Needle.CompilationVisualizer
 
         readonly Dictionary<string, Rect> entryRects = new Dictionary<string, Rect>();
 
-        private void DrawEntry(CompilationAnalysis.CompilationData.AssemblyCompilationData c, Rect localRect, Color color, bool overflowLabel) {
+        private void DrawEntry(CompilationAnalysis.CompilationData compilationData, CompilationAnalysis.CompilationData.AssemblyCompilationData c, Rect localRect, Color color,
+            bool overflowLabel) {
             localRect.xMin += 0.5f;
             localRect.xMax -= 0.5f;
             localRect.yMin += 0.5f;
@@ -538,7 +563,7 @@ namespace Needle.CompilationVisualizer
             }
 
             // localRect.width = Mathf.Max(localRect.width, 500); // make space for the label
-            if (localRect.height > 5 && GUI.Button(localRect, GetGUIContent(c),
+            if (localRect.height > 5 && GUI.Button(localRect, GetGUIContent(compilationData, c),
                 overflowLabel ? Styles.overflowMiniLabel : Styles.miniLabel)) {
                 if (!string.IsNullOrEmpty(selectedEntry) &&
                     selectedEntry.Equals(c.assembly, StringComparison.Ordinal)) {
@@ -666,11 +691,16 @@ namespace Needle.CompilationVisualizer
             }
         }
 
-        GUIContent GetGUIContent(CompilationAnalysis.CompilationData.AssemblyCompilationData c) {
+        const string FormatString = "HH:mm:ss.fff";
+        private const string SpanFormatString = "0.###s";
+        GUIContent GetGUIContent(CompilationAnalysis.CompilationData compilationData, CompilationAnalysis.CompilationData.AssemblyCompilationData c) {
             var shortName = Path.GetFileName(c.assembly);
             // var pi = PackageInfo.FindForAssembly()
             return new GUIContent(shortName,
-                shortName + "\n" + (c.EndTime - c.StartTime).TotalSeconds.ToString("0.###s"));
+                shortName + "\n" +
+                (c.EndTime - c.StartTime).TotalSeconds.ToString(SpanFormatString) + "\n" + 
+                "From " + c.StartTime.ToString(FormatString) + " to " + c.EndTime.ToString(FormatString) + "\n" +
+                "From " + (c.StartTime - compilationData.CompilationStarted).TotalSeconds.ToString(SpanFormatString) + " to " + (c.EndTime - compilationData.CompilationStarted).TotalSeconds.ToString(SpanFormatString));
         }
 
         public void AddItemsToMenu(GenericMenu menu) {
