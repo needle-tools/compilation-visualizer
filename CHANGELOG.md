@@ -2,6 +2,11 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2020-09-26
+- added reload indicator
+- added safeguard against Unity crashes that can result in incorrect data being stored
+- fixed additional information being logged when selecting entries even when AllowLogging was off
+
 ## [1.2.0-preview.2] - 2020-08-28
 - added ability to show/hide Assembly reload times
 - fixed some timing display issues

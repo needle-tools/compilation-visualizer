@@ -100,6 +100,10 @@ namespace Needle.CompilationVisualizer
             public readonly GUIStyle overflowMiniLabel = new GUIStyle(EditorStyles.miniLabel) {
                 clipping = TextClipping.Overflow
             };
+            public readonly GUIStyle rightAlignedLabel = new GUIStyle(EditorStyles.miniLabel) {
+                clipping = TextClipping.Overflow,
+                alignment = TextAnchor.UpperRight
+            };
             public readonly GUIStyle lockButton = "IN LockButton";
         }
 
@@ -234,6 +238,10 @@ namespace Needle.CompilationVisualizer
                 if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
                     totalSpan = DateTime.Now - data.iterations.First().compilationStarted;
                 
+                // workaround for Editor restart issues where compilation events are not complete
+                if(totalSpan.TotalSeconds > 7200)
+                    CompilationAnalysis.CompilationData.Clear();
+                
                 totalCompilationSpan = data.iterations
                     .Select(item => item.CompilationFinished - item.CompilationStarted)
                     .Aggregate((result, item) => result + item);
@@ -295,8 +303,8 @@ namespace Needle.CompilationVisualizer
             }
 
             rect.yMin += 20;
-            viewRect.height = Mathf.Max(viewRect.height, rect.height); // - 15); // scrollbar height
-
+            viewRect.height = Mathf.Max(viewRect.height + k_LineHeight, rect.height); // one extra line for reload indicator
+            
             if (gotSelection) {
                 selectedScrollPosition = GUI.BeginScrollView(rect, selectedScrollPosition, viewRect);
                 scrollPosition.x = selectedScrollPosition.x; // sync X scroll
@@ -415,7 +423,16 @@ namespace Needle.CompilationVisualizer
                     entryRects[c.assembly] = localRect;
                     DrawEntry(compilationData: iterationData, c, localRect, color, !compactDrawing || (compactDrawing && gotSelection));
                 }
+
+                var oldLastSection = lastSectionEndTime;
                 lastSectionEndTime = ShowAssemblyReloads ? iterationData.AfterAssemblyReload : iterationData.CompilationFinished;
+                
+                // reload indicator at the end of each iteration
+                var xSpan2 = (iterationData.CompilationFinished - iterationData.CompilationStarted) + (oldLastSection - firstCompilationStarted);
+                var wSpan2 = lastSectionEndTime - iterationData.CompilationFinished;
+                var x2 = (float) (xSpan2.TotalSeconds / totalSeconds) * totalWidth;
+                var w2 = (float) (wSpan2.TotalSeconds / totalSeconds) * totalWidth;
+                DrawReloadIndicator(viewRect, ShowAssemblyReloads, x2, w2, (float) (iterationData.AfterAssemblyReload - iterationData.CompilationFinished).TotalSeconds);
             }
             lastTotalHeight = currentHeight;
 
@@ -482,6 +499,18 @@ namespace Needle.CompilationVisualizer
              var dirtyAllScriptsMethod = editorCompilationInterfaceType?.GetMethod("DirtyAllScripts", BindingFlags.Static | BindingFlags.Public);
              dirtyAllScriptsMethod?.Invoke(editorCompilationInterfaceType, null);
 #endif
+        }
+        
+        private void DrawReloadIndicator(Rect viewRect, bool showAssemblyReloads, float x, float width, float reloadDuration)
+        {
+            if (showAssemblyReloads)
+                GUI.color = new Color(1, 0, 0, 0.05f);
+            else
+                GUI.color = new Color(1, 0, 0, 0.5f);
+            GUI.DrawTexture(new Rect(x, viewRect.yMin, Mathf.Max(1, width), viewRect.height), Texture2D.whiteTexture);
+            GUI.color = Color.red;
+            GUI.Label(new Rect(x - 100, viewRect.yMax - 14, 100, 14), (reloadDuration).ToString("0.###s"), Styles.rightAlignedLabel);
+            GUI.color = Color.white;
         }
         
         void DrawTimeHeader(Rect viewRect, Vector2 scroll, float totalMilliseconds) {
@@ -573,52 +602,56 @@ namespace Needle.CompilationVisualizer
 
                 selectedEntry = c.assembly;
 
-                var path = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(c.assembly);
-                var asm = Assemblies.FirstOrDefault(x => x.outputPath == c.assembly);
+                if(AllowLogging) {
+                    try {
+                        var path = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(c.assembly);
+                        var asm = Assemblies.FirstOrDefault(x => x.outputPath == c.assembly);
 
-                if (asm == null) {
-                    Debug.LogError("Assembly is null for " + path + " from " + c.assembly);
-                    return;
+                        if (asm == null) {
+                            Debug.LogError("Assembly is null for " + path + " from " + c.assembly);
+                            return;
+                        }
+
+                        var asmDefAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
+                        
+                        var pi = string.IsNullOrEmpty(path) ?
+                            null :
+                            #if UNITY_2019_2_OR_NEWER
+                            PackageInfo.FindForAssetPath(path);
+                            #else
+                            default(PackageInfo);
+                            #endif
+
+                        var editorPath = Path.GetDirectoryName(EditorApplication.applicationPath) + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar;
+                        var logString = "<b>" + Path.GetFileName(path) + "</b>" + " in " + (pi?.name ?? "Assets") +
+                                  "\n\n<i>Assembly References</i>:\n- " +
+                                  string.Join("\n- ",
+                                      asm.assemblyReferences.Select(x => x.name)
+                                  ) +
+                                  "\n\n<i>Defines</i>:\n- " +
+                                  string.Join("\n- ",
+                                      asm.defines
+                                          .OrderBy(x => x)
+                                  ) +
+                                  "\n\n<i>Compiled Assembly References</i>:\n- " +
+                                  string.Join("\n- ",
+                                      asm.compiledAssemblyReferences.Select(x =>
+                                          Path.GetFileName(x) + "   <color=#ffffff" + "55>" + Path.GetDirectoryName(x).Replace(editorPath, "") + "</color>")
+                                  );
+                        // Workaround for console log length limitations
+                        const int MaxLogLength = 15000;
+                        if (logString.Length > MaxLogLength) {
+                            var colorMarker = "</color>";
+                            logString = logString.Substring(0, MaxLogLength);
+                            int substringLength = logString.LastIndexOf(colorMarker, StringComparison.Ordinal) + colorMarker.Length;
+                            if(substringLength <= logString.Length)
+                                logString = logString.Substring(0,  substringLength) + "\n\n<b>(truncated)</b>";
+                        }
+                        
+                        Debug.Log(logString, asmDefAsset);
+                    }
+                    catch (NullReferenceException _) {}
                 }
-
-                var asmDefAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
-                
-                var pi = string.IsNullOrEmpty(path) ?
-                    null :
-                    #if UNITY_2019_2_OR_NEWER
-                    PackageInfo.FindForAssetPath(path);
-                    #else
-                    default(PackageInfo);
-                    #endif
-
-                var editorPath = Path.GetDirectoryName(EditorApplication.applicationPath) + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar;
-                var logString = "<b>" + Path.GetFileName(path) + "</b>" + " in " + (pi?.name ?? "Assets") +
-                          "\n\n<i>Assembly References</i>:\n- " +
-                          string.Join("\n- ",
-                              asm.assemblyReferences.Select(x => x.name)
-                          ) +
-                          "\n\n<i>Defines</i>:\n- " +
-                          string.Join("\n- ",
-                              asm.defines
-                                  .OrderBy(x => x)
-                          ) +
-                          "\n\n<i>Compiled Assembly References</i>:\n- " +
-                          string.Join("\n- ",
-                              asm.compiledAssemblyReferences.Select(x =>
-                                  Path.GetFileName(x) + "   <color=#ffffff" + "55>" + Path.GetDirectoryName(x).Replace(editorPath, "") + "</color>")
-                          );
-                // Workaround for console log length limitations
-                const int maxLogLength = 15000;
-                if (logString.Length > maxLogLength) {
-                    var colorMarker = "</color>";
-                    logString = logString.Substring(0, maxLogLength);
-                    int substringLength = logString.LastIndexOf(colorMarker, StringComparison.Ordinal) + colorMarker.Length;
-                    if(substringLength <= logString.Length)
-                        logString = logString.Substring(0,  substringLength) + "\n\n<b>(truncated)</b>";
-                }
-                
-                Debug.Log(logString, asmDefAsset);
-
                 // EditorGUIUtility.PingObject(asmDefAsset);
             }
         }
@@ -707,7 +740,7 @@ namespace Needle.CompilationVisualizer
             windowLockState.AddItemsToMenu(menu);
         }
         
-        protected virtual void ShowButton(Rect r) {
+        protected void ShowButton(Rect r) {
             windowLockState.ShowButton(r, Styles.lockButton);
         }
     }
