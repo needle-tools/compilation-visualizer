@@ -241,14 +241,24 @@ namespace Needle.CompilationVisualizer
 
             private static IterativeCompilationData tempData = null;
             public static IterativeCompilationData GetAll() {
-                if (tempData != null) return tempData;
+                if (tempData != null && tempData.iterations.Any())
+                    return tempData;
                 
                 if (!EditorPrefs.HasKey(EditorPrefStore)) {
                     var sd = new IterativeCompilationData();
                     WriteAll(sd);
                 }
-                var restoredData = JsonUtility.FromJson<IterativeCompilationData>(EditorPrefs.GetString(EditorPrefStore));
-                tempData = restoredData;
+
+                try {
+                    var restoredData = JsonUtility.FromJson<IterativeCompilationData>(EditorPrefs.GetString(EditorPrefStore));
+                    tempData = restoredData;
+                }
+                catch {
+                    var sd = new IterativeCompilationData();
+                    WriteAll(sd);
+                    tempData = sd;
+                }
+                
                 return tempData;
             }
 
