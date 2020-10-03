@@ -650,7 +650,7 @@ namespace Needle.CompilationVisualizer
                         
                         Debug.Log(logString, asmDefAsset);
                     }
-                    catch (NullReferenceException _) {}
+                    catch {}
                 }
                 // EditorGUIUtility.PingObject(asmDefAsset);
             }
