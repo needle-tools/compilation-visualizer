@@ -239,8 +239,10 @@ namespace Needle.CompilationVisualizer
                     totalSpan = DateTime.Now - data.iterations.First().compilationStarted;
                 
                 // workaround for Editor restart issues where compilation events are not complete
-                if(totalSpan.TotalSeconds > 7200)
+                if(totalSpan.TotalSeconds > 7200) {
                     CompilationAnalysis.CompilationData.Clear();
+                    return; // need to cancel drawing here, otherwise we end up in an infinite loop
+                }
                 
                 totalCompilationSpan = data.iterations
                     .Select(item => item.CompilationFinished - item.CompilationStarted)
@@ -509,7 +511,7 @@ namespace Needle.CompilationVisualizer
                 GUI.color = new Color(1, 0, 0, 0.5f);
             GUI.DrawTexture(new Rect(x, viewRect.yMin, Mathf.Max(1, width), viewRect.height), Texture2D.whiteTexture);
             GUI.color = Color.red;
-            GUI.Label(new Rect(x - 100, viewRect.yMax - 14, 100, 14), (reloadDuration).ToString("0.###s"), Styles.rightAlignedLabel);
+            GUI.Label(new Rect(x - 100, viewRect.yMax - 14, 100, 14), "Reload: " + reloadDuration.ToString("0.###s"), Styles.rightAlignedLabel);
             GUI.color = Color.white;
         }
         
