@@ -83,7 +83,7 @@ namespace Needle.CompilationVisualizer
             var data = CompilationData.Get();
             // need to detect compilation start manually
             #if !UNITY_2019_1_OR_NEWER
-            if (data.compilationFinished != DateTime.MinValue)
+            if (data == null || data.compilationFinished != DateTime.MinValue)
             {
                 // this should be the start of a new compilation
                 OnCompilationStarted(null);
@@ -241,22 +241,31 @@ namespace Needle.CompilationVisualizer
 
             private static IterativeCompilationData tempData = null;
             public static IterativeCompilationData GetAll() {
+                IterativeCompilationData CreateNew()
+                {
+                    var sd = new IterativeCompilationData();
+                    if (sd.iterations == null)
+                        sd.iterations = new List<CompilationData>();
+                    if(sd.iterations.Count < 1)
+                        sd.iterations.Add(new CompilationData());
+                    WriteAll(sd);
+                    return sd;
+                }
+                
                 if (tempData != null && tempData.iterations.Any())
                     return tempData;
                 
-                if (!EditorPrefs.HasKey(EditorPrefStore)) {
-                    var sd = new IterativeCompilationData();
-                    WriteAll(sd);
-                }
+                if (!EditorPrefs.HasKey(EditorPrefStore))
+                    CreateNew();
 
                 try {
                     var restoredData = JsonUtility.FromJson<IterativeCompilationData>(EditorPrefs.GetString(EditorPrefStore));
+                    if (restoredData.iterations == null) restoredData.iterations = new List<CompilationData>();
+                    if (restoredData.iterations.Count < 1) restoredData.iterations.Add(new CompilationData());
                     tempData = restoredData;
                 }
                 catch {
-                    var sd = new IterativeCompilationData();
-                    WriteAll(sd);
-                    tempData = sd;
+                    tempData = CreateNew();
                 }
                 
                 return tempData;
