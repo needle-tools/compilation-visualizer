@@ -214,6 +214,7 @@ namespace Needle.CompilationVisualizer
             var gotSelection = !string.IsNullOrEmpty(selectedEntry);
             
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
+            EditorGUI.BeginDisabledGroup(EditorApplication.isCompiling);
             if (GUILayout.Button("Recompile", EditorStyles.toolbarButton))
             {
                 if(AllowRefresh)
@@ -221,6 +222,7 @@ namespace Needle.CompilationVisualizer
                 RecompileEverything();
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
+            EditorGUI.EndDisabledGroup();
             EditorGUILayout.Space();
             
             compactDrawing = GUILayout.Toggle(compactDrawing, "Compact", EditorStyles.toolbarButton);
