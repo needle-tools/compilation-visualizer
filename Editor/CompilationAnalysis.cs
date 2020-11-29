@@ -34,7 +34,9 @@ namespace Needle.CompilationVisualizer
             CompilationPipeline.compilationStarted += OnCompilationStarted;
             CompilationPipeline.compilationFinished += OnCompilationFinished;
             #endif
+            #if !UNITY_2021_1_OR_NEWER
             CompilationPipeline.assemblyCompilationStarted += OnAssemblyCompilationStarted;
+            #endif
             CompilationPipeline.assemblyCompilationFinished += OnAssemblyCompilationFinished;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
@@ -90,15 +92,11 @@ namespace Needle.CompilationVisualizer
                 data = CompilationData.Get();
             }
             #endif
-            // var compilationData = data.compilationData.FirstOrDefault(x => x.assembly == assembly);
-            // if(compilationData == null)
-            // {
-                var compilationData = new CompilationData.AssemblyCompilationData() {
-                    assembly = assembly,
-                    StartTime = DateTime.Now
-                };
-                data.compilationData.Add(compilationData);
-            // }
+            var compilationData = new CompilationData.AssemblyCompilationData() {
+                assembly = assembly,
+                StartTime = DateTime.Now
+            };
+            data.compilationData.Add(compilationData);
             if(AllowLogging) Debug.Log("Compilation started: " + "<b>" + assembly + "</b>" + " at " + DateTime.Now);
             compilationData.StartTime = DateTime.Now;
             CompilationData.Write(data);
@@ -106,9 +104,13 @@ namespace Needle.CompilationVisualizer
 
         private static void OnAssemblyCompilationFinished(string assembly, CompilerMessage[] arg2)
         {
+#if UNITY_2021_1_OR_NEWER
+            OnAssemblyCompilationStarted(assembly);
+#endif
+            Debug.Log("finished compiling " + assembly);
             var data = CompilationData.Get();
             var compilationData = data.compilationData.LastOrDefault(x => x.assembly == assembly);
-            if(compilationData == null) {
+            if(compilationData == null) { 
                 Debug.LogError("Compilation finished for " + assembly + ", but no startTime found!");
                 return;
             }
