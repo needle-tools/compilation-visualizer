@@ -1,4 +1,8 @@
-﻿using System;
+﻿#if false || UNITY_2021_1_OR_NEWER
+#define BEE_COMPILATION_PIPELINE
+#endif
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,6 +14,12 @@ using UnityEngine;
 using UnityEditorInternal;
 using Assembly = UnityEditor.Compilation.Assembly;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
+
+#if BEE_COMPILATION_PIPELINE
+using IterativeCompilationData = Needle.CompilationVisualizer.CompilationData.IterativeCompilationData;
+#else
+using IterativeCompilationData = Needle.CompilationVisualizer.CompilationAnalysis.IterativeCompilationData;
+#endif
 
 namespace Needle.CompilationVisualizer
 {
@@ -28,8 +38,8 @@ namespace Needle.CompilationVisualizer
         public EditorWindowLockState windowLockState = new EditorWindowLockState();
         public bool compactDrawing = true;
         public int threadCountMultiplier = 1;
-        public CompilationAnalysis.IterativeCompilationData data;
-
+        public IterativeCompilationData data;
+        
         private void OnEnable() {
             #if UNITY_2019_1_OR_NEWER
             CompilationPipeline.compilationFinished += CompilationFinished;
@@ -77,7 +87,7 @@ namespace Needle.CompilationVisualizer
         private void OnLockStateChanged(bool locked)
         {
             if(!locked)
-                data = CompilationAnalysis.CompilationData.GetAll();
+                data = CompilationData.GetAll();
         }
 
         private bool AllowLogging {
@@ -117,7 +127,7 @@ namespace Needle.CompilationVisualizer
         private void Refresh() {
             // Debug.Log("should refresh, allowed: " + allowRefresh);
             if (AllowRefresh) {
-                data = CompilationAnalysis.CompilationData.GetAll();
+                data = CompilationData.GetAll();
                 Repaint();
             }
         }
@@ -206,6 +216,13 @@ namespace Needle.CompilationVisualizer
         // slot ID (height index) to current end time
         private static readonly Dictionary<int, float> GraphSlots = new Dictionary<int, float>();
 
+        private void Clear()
+        {
+            #if !BEE_COMPILATION_PIPELINE
+            CompilationAnalysis.CompilationData.Clear();
+            #endif
+        }
+        
         private void OnGUI()
         {
             // data = CompilationAnalysis.CompilationData.GetAll();
@@ -218,13 +235,20 @@ namespace Needle.CompilationVisualizer
             if (GUILayout.Button("Recompile", EditorStyles.toolbarButton))
             {
                 if(AllowRefresh)
-                    CompilationAnalysis.CompilationData.Clear();
+                    Clear();
                 RecompileEverything();
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
+            
+            //// For Testing on 2021
+            // if (GUILayout.Button("Fetch Trace", EditorStyles.toolbarButton))
+            // {
+            //     data = CompilationData.GetAll();
+            // }
+            
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.Space();
-            
+
             compactDrawing = GUILayout.Toggle(compactDrawing, "Compact", EditorStyles.toolbarButton);
             AllowLogging = GUILayout.Toggle(AllowLogging, new GUIContent("Logging", "Log additional compilation data to the console on compilation"), EditorStyles.toolbarButton);
             ShowAssemblyReloads = GUILayout.Toggle(ShowAssemblyReloads, new GUIContent("Show Reloads", "Show or hide assembly reloads in the timeline."), EditorStyles.toolbarButton);
@@ -238,11 +262,11 @@ namespace Needle.CompilationVisualizer
             if(gotData && data.iterations.Count > 0) {
                 totalSpan = data.iterations.Last().AfterAssemblyReload - data.iterations.First().CompilationStarted;
                 if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
-                    totalSpan = DateTime.Now - data.iterations.First().compilationStarted;
+                    totalSpan = DateTime.Now - data.iterations.First().CompilationStarted;
                 
                 // workaround for Editor restart issues where compilation events are not complete
                 if(totalSpan.TotalSeconds > 7200) {
-                    CompilationAnalysis.CompilationData.Clear();
+                    Clear();
                     return; // need to cancel drawing here, otherwise we end up in an infinite loop
                 }
                 
@@ -251,7 +275,7 @@ namespace Needle.CompilationVisualizer
                     .Aggregate((result, item) => result + item);
                            
                 if (totalCompilationSpan.TotalSeconds < 0) // timespan adjusted during compilation
-                    totalCompilationSpan = DateTime.Now - data.iterations.First().compilationStarted;
+                    totalCompilationSpan = DateTime.Now - data.iterations.First().CompilationStarted;
 
                 var totalReloadSpan = data.iterations
                     .Select(item => item.AfterAssemblyReload - item.BeforeAssemblyReload)
@@ -495,6 +519,15 @@ namespace Needle.CompilationVisualizer
 
         void RecompileEverything()
         {
+#if UNITY_2021_1_OR_NEWER || BEE_COMPILATION_PIPELINE
+            if(Directory.Exists("Library/Bee")) {
+                try {
+                    Directory.Delete("Library/Bee", true);
+                }
+                catch(IOException) {}
+            }
+            AssetDatabase.Refresh();
+#endif
 #if UNITY_2019_3_OR_NEWER
             CompilationPipeline.RequestScriptCompilation();
 #elif UNITY_2017_1_OR_NEWER
@@ -582,7 +615,7 @@ namespace Needle.CompilationVisualizer
 
         readonly Dictionary<string, Rect> entryRects = new Dictionary<string, Rect>();
 
-        private void DrawEntry(CompilationAnalysis.CompilationData compilationData, CompilationAnalysis.CompilationData.AssemblyCompilationData c, Rect localRect, Color color,
+        private void DrawEntry(CompilationData compilationData, AssemblyCompilationData c, Rect localRect, Color color,
             bool overflowLabel) {
             localRect.xMin += 0.5f;
             localRect.xMax -= 0.5f;
@@ -663,7 +696,7 @@ namespace Needle.CompilationVisualizer
         private static readonly Color ConnectorColor = new Color(1f, 1f, 0.7f, 0.4f);
         private static readonly Color ConnectorColor2 = new Color(0.7f, 1f, 1f, 0.4f);
 
-        private void DrawConnectors(CompilationAnalysis.CompilationData.AssemblyCompilationData c,
+        private void DrawConnectors(AssemblyCompilationData c,
             Rect originalRect) {
             void DrawConnector(int i, IList<Assembly> assemblyList, bool alignRight, Color color) {
                 // target asm
@@ -730,7 +763,7 @@ namespace Needle.CompilationVisualizer
 
         const string FormatString = "HH:mm:ss.fff";
         private const string SpanFormatString = "0.###s";
-        GUIContent GetGUIContent(CompilationAnalysis.CompilationData compilationData, CompilationAnalysis.CompilationData.AssemblyCompilationData c) {
+        GUIContent GetGUIContent(CompilationData compilationData, AssemblyCompilationData c) {
             var shortName = Path.GetFileName(c.assembly);
             // var pi = PackageInfo.FindForAssembly()
             return new GUIContent(shortName,

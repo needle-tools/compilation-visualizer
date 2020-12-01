@@ -29,6 +29,7 @@ namespace Needle.CompilationVisualizer
             set => EditorPrefs.SetBool(ShowAssemblyReloadsPrefsKey, value);
         }
 
+#if !UNITY_2021_1_OR_NEWER
         static CompilationAnalysis() {
             #if UNITY_2019_1_OR_NEWER
             CompilationPipeline.compilationStarted += OnCompilationStarted;
@@ -168,7 +169,6 @@ namespace Needle.CompilationVisualizer
         public class IterativeCompilationData
         {
             public List<CompilationData> iterations = new List<CompilationData>();
-            public CompilationData Current => iterations.LastOrDefault();
         }
         
         [Serializable]
@@ -184,60 +184,6 @@ namespace Needle.CompilationVisualizer
             public DateTime CompilationFinished { get; set; }
             public DateTime BeforeAssemblyReload { get; set; }
             public DateTime AfterAssemblyReload { get; set; }
-
-            [Serializable]
-            public struct SerializableDateTime
-            {
-                private static string format = "MM-dd-yyyy HH:mm:ss.fff";
-                public string utc;
-                
-                public DateTime DateTime {
-                    get
-                    {
-                        if (DateTime.TryParseExact(utc, format, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out DateTime result))
-                            return result;
-                        
-                        return DateTime.Now;
-                    }
-                    set => utc = value.ToString(format, CultureInfo.InvariantCulture);
-                }
-
-                public static implicit operator SerializableDateTime(DateTime dateTime) {
-                    var sd = new SerializableDateTime { DateTime = dateTime };
-                    return sd;
-                }
-                
-                public static implicit operator DateTime(SerializableDateTime dateTime) {
-                    return dateTime.DateTime;
-                }
-            }
-            
-            [Serializable]
-            public class AssemblyCompilationData : ISerializationCallbackReceiver
-            {
-                private static string format = "HH:mm:ss.fff";
-                public override string ToString() {
-                    return assembly + ": " + (EndTime - StartTime) + " (from " + StartTime.ToString(format, CultureInfo.CurrentCulture) + " to " + EndTime.ToString(format, CultureInfo.CurrentCulture) + ")";
-                }
-                
-                public string assembly;
-                public SerializableDateTime startTime;
-                public SerializableDateTime endTime;
-                public DateTime StartTime { get; set; }
-                public DateTime EndTime { get; set; }
-                
-                public void OnBeforeSerialize()
-                {
-                    startTime = StartTime;
-                    endTime = EndTime;
-                }
-
-                public void OnAfterDeserialize()
-                {
-                    StartTime = startTime;
-                    EndTime = endTime;
-                }
-            }
             
             public List<AssemblyCompilationData> compilationData = new List<AssemblyCompilationData>();
 
@@ -307,6 +253,6 @@ namespace Needle.CompilationVisualizer
                 tempData.iterations.Add(new CompilationData());
             }
         }
-        
+#endif
     }
 }
