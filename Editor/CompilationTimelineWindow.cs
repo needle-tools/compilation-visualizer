@@ -1,4 +1,4 @@
-﻿#if false || UNITY_2021_1_OR_NEWER
+﻿#if UNITY_2021_1_OR_NEWER
 #define BEE_COMPILATION_PIPELINE
 #endif
 
@@ -82,7 +82,7 @@ namespace Needle.CompilationVisualizer
                 }
             }
 
-            Refresh();
+            EditorApplication.delayCall += Refresh;
         }
 
         private void OnLockStateChanged(bool locked)
@@ -126,8 +126,8 @@ namespace Needle.CompilationVisualizer
         }
 
         private void Refresh() {
-            // Debug.Log("should refresh, allowed: " + allowRefresh);
-            if (AllowRefresh) {
+            if (AllowRefresh)
+            {
                 data = CompilationData.GetAll();
                 Repaint();
             }
@@ -178,14 +178,30 @@ namespace Needle.CompilationVisualizer
             }
         }
 
-        private void CompilationFinished(object obj) {
-            Refresh();
-            ClearCaches();
+        private void CompilationFinished(object obj)
+        {
+            var now = DateTime.Now;
+            // EditorApplication.delayCall += () =>
+            // {
+                Refresh();
+#if UNITY_2021_1_OR_NEWER
+                data.iterations.Last().BeforeAssemblyReload = now;
+#endif
+                ClearCaches();
+            // };
         }
 
-        private void AfterAssemblyReload() {
-            Refresh();
-            ClearCaches();
+        private void AfterAssemblyReload()
+        {
+            var now = DateTime.Now;
+            // EditorApplication.delayCall += () =>
+            // {
+                Refresh();
+#if UNITY_2021_1_OR_NEWER
+                data.iterations.Last().AfterAssemblyReload = now;
+#endif
+                ClearCaches();
+            // };
         }
 
         private void ClearCaches() {
@@ -226,6 +242,9 @@ namespace Needle.CompilationVisualizer
         
         private void OnGUI()
         {
+            if (data?.iterations == null || !data.iterations.Any() || data.iterations.First().compilationData == null || data.iterations.First().compilationData.Any())
+                data = CompilationData.GetAll();
+            
             // data = CompilationAnalysis.CompilationData.GetAll();
             
             var gotData = data != null && data.iterations != null && data.iterations.Count > 0;
@@ -241,11 +260,13 @@ namespace Needle.CompilationVisualizer
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
             
-            //// For Testing on 2021
+            // #if UNITY_2021_1_OR_NEWER
+            // // For Testing on 2021
             // if (GUILayout.Button("Fetch Trace", EditorStyles.toolbarButton))
             // {
             //     data = CompilationData.GetAll();
             // }
+            // #endif
             
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.Space();
@@ -261,6 +282,11 @@ namespace Needle.CompilationVisualizer
             
             GUILayout.FlexibleSpace();
             if(gotData && data.iterations.Count > 0) {
+                // #if UNITY_2021_1_OR_NEWER
+                // if (EditorApplication.isCompiling)
+                //     return;
+                // #endif
+                
                 totalSpan = data.iterations.Last().AfterAssemblyReload - data.iterations.First().CompilationStarted;
                 if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
                     totalSpan = DateTime.Now - data.iterations.First().CompilationStarted;
@@ -784,6 +810,17 @@ namespace Needle.CompilationVisualizer
 
         public void AddItemsToMenu(GenericMenu menu) {
             windowLockState.AddItemsToMenu(menu);
+            #if UNITY_2021_1_OR_NEWER
+            menu.AddItem(new GUIContent("Fetch Bee Trace"), false, () =>
+            {
+                data = CompilationData.GetAll();
+            });
+            menu.AddItem(new GUIContent("Open Chrome and Trace File"), false, () =>
+            {
+                EditorUtility.RevealInFinder("Library/Bee/profiler.json");
+                Application.OpenURL("chrome://trace");
+            });
+            #endif
         }
         
         protected void ShowButton(Rect r) {

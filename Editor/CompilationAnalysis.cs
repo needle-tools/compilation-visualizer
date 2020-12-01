@@ -108,7 +108,6 @@ namespace Needle.CompilationVisualizer
 #if UNITY_2021_1_OR_NEWER
             OnAssemblyCompilationStarted(assembly);
 #endif
-            Debug.Log("finished compiling " + assembly);
             var data = CompilationData.Get();
             var compilationData = data.compilationData.LastOrDefault(x => x.assembly == assembly);
             if(compilationData == null) { 
