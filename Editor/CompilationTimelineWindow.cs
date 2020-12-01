@@ -15,14 +15,15 @@ using UnityEditorInternal;
 using Assembly = UnityEditor.Compilation.Assembly;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
-#if BEE_COMPILATION_PIPELINE
-using IterativeCompilationData = Needle.CompilationVisualizer.CompilationData.IterativeCompilationData;
-#else
-using IterativeCompilationData = Needle.CompilationVisualizer.CompilationAnalysis.IterativeCompilationData;
-#endif
-
 namespace Needle.CompilationVisualizer
 {
+#if BEE_COMPILATION_PIPELINE
+    using IterativeCompilationData = CompilationData.IterativeCompilationData;
+#else
+    using CompilationData = CompilationAnalysis.CompilationData;
+    using IterativeCompilationData = CompilationAnalysis.IterativeCompilationData;
+#endif
+    
     internal class CompilationTimelineWindow : EditorWindow, IHasCustomMenu
     {
         [MenuItem("Window/Analysis/Compilation Timeline")]
@@ -644,50 +645,58 @@ namespace Needle.CompilationVisualizer
                         var path = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(c.assembly);
                         var asm = Assemblies.FirstOrDefault(x => x.outputPath == c.assembly);
 
-                        if (asm == null) {
+                        if (asm == null)
+                        {
                             Debug.LogError("Assembly is null for " + path + " from " + c.assembly);
                             return;
                         }
 
                         var asmDefAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(path);
-                        
-                        var pi = string.IsNullOrEmpty(path) ?
-                            null :
-                            #if UNITY_2019_2_OR_NEWER
-                            PackageInfo.FindForAssetPath(path);
-                            #else
-                            default(PackageInfo);
-                            #endif
 
-                        var editorPath = Path.GetDirectoryName(EditorApplication.applicationPath) + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar;
+                        var pi = string.IsNullOrEmpty(path)
+                            ? null
+                            :
+#if UNITY_2019_2_OR_NEWER
+                            PackageInfo.FindForAssetPath(path);
+#else
+                            default(PackageInfo);
+#endif
+
+                        var editorPath = Path.GetDirectoryName(EditorApplication.applicationPath) +
+                                         Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar;
                         var logString = "<b>" + Path.GetFileName(path) + "</b>" + " in " + (pi?.name ?? "Assets") +
-                                  "\n\n<i>Assembly References</i>:\n- " +
-                                  string.Join("\n- ",
-                                      asm.assemblyReferences.Select(x => x.name)
-                                  ) +
-                                  "\n\n<i>Defines</i>:\n- " +
-                                  string.Join("\n- ",
-                                      asm.defines
-                                          .OrderBy(x => x)
-                                  ) +
-                                  "\n\n<i>Compiled Assembly References</i>:\n- " +
-                                  string.Join("\n- ",
-                                      asm.compiledAssemblyReferences.Select(x =>
-                                          Path.GetFileName(x) + "   <color=#ffffff" + "55>" + Path.GetDirectoryName(x).Replace(editorPath, "") + "</color>")
-                                  );
+                                        "\n\n<i>Assembly References</i>:\n- " +
+                                        string.Join("\n- ",
+                                            asm.assemblyReferences.Select(x => x.name)
+                                        ) +
+                                        "\n\n<i>Defines</i>:\n- " +
+                                        string.Join("\n- ",
+                                            asm.defines
+                                                .OrderBy(x => x)
+                                        ) +
+                                        "\n\n<i>Compiled Assembly References</i>:\n- " +
+                                        string.Join("\n- ",
+                                            asm.compiledAssemblyReferences.Select(x =>
+                                                Path.GetFileName(x) + "   <color=#ffffff" + "55>" +
+                                                Path.GetDirectoryName(x).Replace(editorPath, "") + "</color>")
+                                        );
                         // Workaround for console log length limitations
                         const int MaxLogLength = 15000;
-                        if (logString.Length > MaxLogLength) {
+                        if (logString.Length > MaxLogLength)
+                        {
                             var colorMarker = "</color>";
                             logString = logString.Substring(0, MaxLogLength);
-                            int substringLength = logString.LastIndexOf(colorMarker, StringComparison.Ordinal) + colorMarker.Length;
-                            if(substringLength <= logString.Length)
-                                logString = logString.Substring(0,  substringLength) + "\n\n<b>(truncated)</b>";
+                            int substringLength = logString.LastIndexOf(colorMarker, StringComparison.Ordinal) +
+                                                  colorMarker.Length;
+                            if (substringLength <= logString.Length)
+                                logString = logString.Substring(0, substringLength) + "\n\n<b>(truncated)</b>";
                         }
-                        
+
                         Debug.Log(logString, asmDefAsset);
                     }
-                    catch {}
+                    catch {
+                        // ignored
+                    }
                 }
                 // EditorGUIUtility.PingObject(asmDefAsset);
             }

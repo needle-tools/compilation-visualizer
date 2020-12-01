@@ -93,7 +93,7 @@ namespace Needle.CompilationVisualizer
                 data = CompilationData.Get();
             }
             #endif
-            var compilationData = new CompilationData.AssemblyCompilationData() {
+            var compilationData = new AssemblyCompilationData() {
                 assembly = assembly,
                 StartTime = DateTime.Now
             };
