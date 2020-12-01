@@ -63,6 +63,7 @@ namespace Needle.CompilationVisualizer
                             StartTime = new DateTime((x.ts - firstTs) * conv),
                             EndTime = new DateTime((x.ts - firstTs + x.dur) * conv),
                         })
+                        .OrderBy(x => x.StartTime)
                         .ToList()
                 };
 
