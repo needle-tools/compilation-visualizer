@@ -320,7 +320,10 @@ namespace Needle.CompilationVisualizer
             }
             GUILayout.EndHorizontal();
 
-            if (!gotData || data.iterations.Count == 0) return;
+            if (!gotData || data.iterations.Count == 0) {
+                GUILayout.Label("Waiting for compilation data...", EditorStyles.miniLabel);
+                return;
+            }
 
             
             var yMax = GUILayoutUtility.GetLastRect().yMax;
