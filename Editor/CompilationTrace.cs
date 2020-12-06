@@ -4,12 +4,49 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEngine;
 
 namespace Needle.CompilationVisualizer
 {
     internal class CompilationData
     {
+        [InitializeOnLoadMethod]
+        static void InitCompilationEvents() {
+#if UNITY_2019_1_OR_NEWER
+            CompilationPipeline.compilationStarted += OnCompilationStarted;
+            CompilationPipeline.compilationFinished += OnCompilationFinished;
+#endif
+            AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+            AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
+        }
+
+        private static void OnCompilationStarted(object obj)
+        {
+            
+            Debug.Log(nameof(OnCompilationStarted) + " " + DateTime.Now);
+        }
+
+        private static void OnCompilationFinished(object obj)
+        {
+            
+            Debug.Log(nameof(OnCompilationFinished) + " " + DateTime.Now);
+        }
+
+
+
+        private static void OnBeforeAssemblyReload()
+        {
+            
+            Debug.Log(nameof(OnBeforeAssemblyReload) + " " + DateTime.Now);
+        }
+        
+        private static void OnAfterAssemblyReload()
+        {
+            Debug.Log(nameof(OnAfterAssemblyReload) + " " + DateTime.Now);
+        }
+
         internal class IterativeCompilationData
         {
             public List<CompilationData> iterations;
@@ -42,7 +79,7 @@ namespace Needle.CompilationVisualizer
             try
             {
                 var beeData =
-                    JsonUtility.FromJson<Root>(
+                    JsonUtility.FromJson<BeeProfilerData>(
                         File.ReadAllText(ProfilerJson)); // "profiler.json")); // "Library/Bee/profiler.json"));
                 if (beeData.traceEvents == null || !beeData.traceEvents.Any()) return null;
 
@@ -103,7 +140,7 @@ namespace Needle.CompilationVisualizer
     }
 
     [Serializable]
-    internal class Root {
+    internal class BeeProfilerData {
         public List<TraceEvent> traceEvents; 
     }
 }

@@ -181,27 +181,24 @@ namespace Needle.CompilationVisualizer
         private void CompilationFinished(object obj)
         {
             var now = DateTime.Now;
-            // EditorApplication.delayCall += () =>
-            // {
-                Refresh();
+            
+            Debug.Log("Comp finished at " + now);
+            Refresh();
 #if UNITY_2021_1_OR_NEWER
-                data.iterations.Last().BeforeAssemblyReload = now;
+            data.iterations.Last().BeforeAssemblyReload = now;
 #endif
-                ClearCaches();
-            // };
+            ClearCaches();
         }
 
         private void AfterAssemblyReload()
         {
             var now = DateTime.Now;
-            // EditorApplication.delayCall += () =>
-            // {
-                Refresh();
+            Debug.Log("reload finished at " + now);
+            Refresh();
 #if UNITY_2021_1_OR_NEWER
-                data.iterations.Last().AfterAssemblyReload = now;
+            data.iterations.Last().AfterAssemblyReload = now;
 #endif
-                ClearCaches();
-            // };
+            ClearCaches();
         }
 
         private void ClearCaches() {
