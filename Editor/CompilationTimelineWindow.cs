@@ -17,13 +17,6 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace Needle.CompilationVisualizer
 {
-#if BEE_COMPILATION_PIPELINE
-    using IterativeCompilationData = CompilationData.IterativeCompilationData;
-#else
-    using CompilationData = CompilationAnalysis.CompilationData;
-    using IterativeCompilationData = CompilationAnalysis.IterativeCompilationData;
-#endif
-    
     internal class CompilationTimelineWindow : EditorWindow, IHasCustomMenu
     {
         [MenuItem("Window/Analysis/Compilation Timeline")]
@@ -185,7 +178,8 @@ namespace Needle.CompilationVisualizer
             Debug.Log("Comp finished at " + now);
             Refresh();
 #if UNITY_2021_1_OR_NEWER
-            data.iterations.Last().BeforeAssemblyReload = now;
+            if(data?.iterations?.Any() ?? false)
+                data.iterations.Last().BeforeAssemblyReload = now;
 #endif
             ClearCaches();
         }
@@ -196,7 +190,13 @@ namespace Needle.CompilationVisualizer
             Debug.Log("reload finished at " + now);
             Refresh();
 #if UNITY_2021_1_OR_NEWER
-            data.iterations.Last().AfterAssemblyReload = now;
+            if(data?.iterations?.Any() ?? false) {
+                if(data.iterations.FirstOrDefault() == null) {
+                    data.iterations.Clear();
+                    data.iterations.Add(new CompilationData());
+                }
+                data.iterations.Last().AfterAssemblyReload = now;
+            }
 #endif
             ClearCaches();
         }
@@ -239,8 +239,10 @@ namespace Needle.CompilationVisualizer
         
         private void OnGUI()
         {
+            #if !UNITY_2021_1_OR_NEWER
             if (data?.iterations == null || !data.iterations.Any() || data.iterations.First().compilationData == null || data.iterations.First().compilationData.Any())
                 data = CompilationData.GetAll();
+            #endif
             
             // data = CompilationAnalysis.CompilationData.GetAll();
             
@@ -278,7 +280,7 @@ namespace Needle.CompilationVisualizer
             var totalCompiledAssemblyCount = 0;
             
             GUILayout.FlexibleSpace();
-            if(gotData && data.iterations.Count > 0) {
+            if(gotData && data.iterations.Count > 0 && data.iterations.FirstOrDefault() != null) {
                 // #if UNITY_2021_1_OR_NEWER
                 // if (EditorApplication.isCompiling)
                 //     return;
@@ -317,7 +319,7 @@ namespace Needle.CompilationVisualizer
             }
             GUILayout.EndHorizontal();
 
-            if (!gotData || data.iterations.Count == 0) {
+            if (!gotData || data.iterations.Count == 0 || data.iterations.FirstOrDefault() == null) {
                 GUILayout.Label("Waiting for compilation data...", EditorStyles.miniLabel);
                 return;
             }

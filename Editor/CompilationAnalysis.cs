@@ -16,8 +16,6 @@ namespace Needle.CompilationVisualizer
     [InitializeOnLoad]
     internal class CompilationAnalysis
     {
-        private const string EditorPrefStore = "Needle.CompilationVisualizer.CompilationData";
-
         private const string AllowLoggingPrefsKey = nameof(CompilationAnalysis) + "_" + nameof(AllowLogging); 
         private const string ShowAssemblyReloadsPrefsKey = nameof(CompilationAnalysis) + "_" + nameof(ShowAssemblyReloads); 
         public static bool AllowLogging {
@@ -29,7 +27,7 @@ namespace Needle.CompilationVisualizer
             set => EditorPrefs.SetBool(ShowAssemblyReloadsPrefsKey, value);
         }
 
-#if !UNITY_2021_1_OR_NEWER
+// #if !UNITY_2021_1_OR_NEWER
         static CompilationAnalysis() {
             #if UNITY_2019_1_OR_NEWER
             CompilationPipeline.compilationStarted += OnCompilationStarted;
@@ -37,8 +35,8 @@ namespace Needle.CompilationVisualizer
             #endif
             #if !UNITY_2021_1_OR_NEWER
             CompilationPipeline.assemblyCompilationStarted += OnAssemblyCompilationStarted;
-            #endif
             CompilationPipeline.assemblyCompilationFinished += OnAssemblyCompilationFinished;
+            #endif
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
@@ -81,6 +79,7 @@ namespace Needle.CompilationVisualizer
             CompilationData.Write(data);
         }
         
+#if !UNITY_2021_1_OR_NEWER
         private static void OnAssemblyCompilationStarted(string assembly)
         {
             var data = CompilationData.Get();
@@ -105,9 +104,6 @@ namespace Needle.CompilationVisualizer
 
         private static void OnAssemblyCompilationFinished(string assembly, CompilerMessage[] arg2)
         {
-#if UNITY_2021_1_OR_NEWER
-            OnAssemblyCompilationStarted(assembly);
-#endif
             var data = CompilationData.Get();
             var compilationData = data.compilationData.LastOrDefault(x => x.assembly == assembly);
             if(compilationData == null) { 
@@ -123,6 +119,7 @@ namespace Needle.CompilationVisualizer
             compilationData.EndTime = DateTime.Now;
             CompilationData.Write(data);
         }
+#endif
 
         private static void OnBeforeAssemblyReload()
         {
@@ -163,95 +160,78 @@ namespace Needle.CompilationVisualizer
             var span = data.AfterAssemblyReload - data.BeforeAssemblyReload;
             Debug.Log("<b>Assembly Reload</b> - Total Time: " + span);
         }
+// #endif
+    }
+    
+    [Serializable]
+    public class IterativeCompilationData
+    {
+        public List<CompilationData> iterations = new List<CompilationData>();
+    }
+    
+    [Serializable]
+    public class CompilationData : BaseCompilationData
+    {
+        private const string EditorPrefStore = "Needle.CompilationVisualizer.CompilationData";
+        // public List<AssemblyCompilationData> compilationData = new List<AssemblyCompilationData>();
 
-        [Serializable]
-        public class IterativeCompilationData
-        {
-            public List<CompilationData> iterations = new List<CompilationData>();
-        }
-        
-        [Serializable]
-        public class CompilationData : ISerializationCallbackReceiver
-        {
-            public SerializableDateTime
-                compilationStarted,
-                compilationFinished,
-                beforeAssemblyReload,
-                afterAssemblyReload;
-
-            public DateTime CompilationStarted { get; set; }
-            public DateTime CompilationFinished { get; set; }
-            public DateTime BeforeAssemblyReload { get; set; }
-            public DateTime AfterAssemblyReload { get; set; }
-            
-            public List<AssemblyCompilationData> compilationData = new List<AssemblyCompilationData>();
-
-            private static IterativeCompilationData tempData = null;
-            public static IterativeCompilationData GetAll() {
-                if (tempData != null && tempData.iterations.Any())
-                    return tempData;
-                
-                if (!EditorPrefs.HasKey(EditorPrefStore)) {
-                    var sd = new IterativeCompilationData();
-                    WriteAll(sd);
-                }
-
-                try {
-                    var restoredData = JsonUtility.FromJson<IterativeCompilationData>(EditorPrefs.GetString(EditorPrefStore));
-                    tempData = restoredData;
-                }
-                catch {
-                    var sd = new IterativeCompilationData();
-                    WriteAll(sd);
-                    tempData = sd;
-                }
-                
+        private static IterativeCompilationData tempData = null;
+        public static IterativeCompilationData GetAll() {
+            if (tempData != null && tempData.iterations.Any())
                 return tempData;
+            
+            if (!EditorPrefs.HasKey(EditorPrefStore)) {
+                var sd = new IterativeCompilationData();
+                WriteAll(sd);
             }
 
-            public static CompilationData Get() {
-                return GetAll().iterations.LastOrDefault();
+            try {
+                var restoredData = JsonUtility.FromJson<IterativeCompilationData>(EditorPrefs.GetString(EditorPrefStore));
+                tempData = restoredData;
             }
-
-            public static void Write(CompilationData data) {
-                var all = GetAll();
-                all.iterations[all.iterations.Count - 1] = data;
-                WriteAll(all);
+            catch {
+                var sd = new IterativeCompilationData();
+                WriteAll(sd);
+                tempData = sd;
             }
-
-            public static void WriteAll(IterativeCompilationData data) {
-                tempData = data;
-                var json = JsonUtility.ToJson(data, true);
-                EditorPrefs.SetString(EditorPrefStore, json);
-            }
-
-            public void OnBeforeSerialize()
-            {
-                compilationStarted = CompilationStarted;
-                compilationFinished = CompilationFinished;
-                afterAssemblyReload = AfterAssemblyReload;
-                beforeAssemblyReload = BeforeAssemblyReload;
-            }
-
-            public void OnAfterDeserialize()
-            {
-                CompilationStarted = compilationStarted;
-                CompilationFinished = compilationFinished;
-                AfterAssemblyReload = afterAssemblyReload;
-                BeforeAssemblyReload = beforeAssemblyReload;
-            }
-
-            public static void Clear()
-            {
-                // need to do a full clear in case a locked window wants to hold onto the old data
-                tempData = new IterativeCompilationData();
-            }
-
-            public static void Add()
-            {
-                tempData.iterations.Add(new CompilationData());
-            }
+            
+            return tempData;
         }
+
+        public static CompilationData Get()
+        {
+            var all = GetAll();
+#if UNITY_2021_1_OR_NEWER
+            if(all.iterations != null && all.iterations.Count > 0) {
+                var beeData = CompilationDataTrace.ConvertBeeDataToCompilationData(all.iterations.LastOrDefault());
+                if(beeData != null)
+                    all.iterations[all.iterations.Count - 1] = beeData;
+            }
 #endif
+            return all.iterations.LastOrDefault();
+        }
+
+        public static void Write(CompilationData data) {
+            var all = GetAll();
+            all.iterations[all.iterations.Count - 1] = data;
+            WriteAll(all);
+        }
+
+        public static void WriteAll(IterativeCompilationData data) {
+            tempData = data;
+            var json = JsonUtility.ToJson(data, true);
+            EditorPrefs.SetString(EditorPrefStore, json);
+        }
+
+        public static void Clear()
+        {
+            // need to do a full clear in case a locked window wants to hold onto the old data
+            tempData = new IterativeCompilationData();
+        }
+
+        public static void Add()
+        {
+            tempData.iterations.Add(new CompilationData());
+        }
     }
 }
