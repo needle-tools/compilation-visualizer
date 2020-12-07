@@ -271,12 +271,8 @@ namespace Needle.CompilationVisualizer
             var totalCompiledAssemblyCount = 0;
             
             GUILayout.FlexibleSpace();
-            if(gotData && data.iterations.Count > 0) {
-                // #if UNITY_2021_1_OR_NEWER
-                // if (EditorApplication.isCompiling)
-                //     return;
-                // #endif
-                
+            if(gotData && data.iterations.Count > 0)
+            {
                 totalSpan = data.iterations.Last().AfterAssemblyReload - data.iterations.First().CompilationStarted;
                 if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
                     totalSpan = DateTime.Now - data.iterations.First().CompilationStarted;
