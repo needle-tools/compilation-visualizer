@@ -10,8 +10,35 @@ using UnityEngine;
 
 namespace Needle.CompilationVisualizer
 {
-    internal class CompilationData
+    internal class TraceData : ScriptableSingleton<TraceData>, ISerializationCallbackReceiver
     {
+        public SerializableDateTime
+            compilationStarted,
+            compilationFinished,
+            beforeAssemblyReload,
+            afterAssemblyReload;
+        
+        public DateTime CompilationFinished;
+        public DateTime CompilationStarted;
+        public DateTime AfterAssemblyReload;
+        public DateTime BeforeAssemblyReload;    
+        
+        public void OnBeforeSerialize()
+        {
+            compilationStarted = CompilationStarted;
+            compilationFinished = CompilationFinished;
+            afterAssemblyReload = AfterAssemblyReload;
+            beforeAssemblyReload = BeforeAssemblyReload;
+        }
+
+        public void OnAfterDeserialize()
+        {
+            CompilationStarted = compilationStarted;
+            CompilationFinished = compilationFinished;
+            AfterAssemblyReload = afterAssemblyReload;
+            BeforeAssemblyReload = beforeAssemblyReload;
+        }
+        
         [InitializeOnLoadMethod]
         static void InitCompilationEvents() {
 #if UNITY_2019_1_OR_NEWER
@@ -24,37 +51,44 @@ namespace Needle.CompilationVisualizer
 
         private static void OnCompilationStarted(object obj)
         {
-            
-            Debug.Log(nameof(OnCompilationStarted) + " " + DateTime.Now);
+            instance.CompilationStarted = DateTime.Now;
+            // Debug.Log(nameof(OnCompilationStarted) + " " + DateTime.Now);
         }
 
         private static void OnCompilationFinished(object obj)
         {
-            
-            Debug.Log(nameof(OnCompilationFinished) + " " + DateTime.Now);
+            instance.CompilationFinished = DateTime.Now;
+            // Debug.Log(nameof(OnCompilationFinished) + " " + DateTime.Now);
         }
 
 
 
         private static void OnBeforeAssemblyReload()
         {
-            
-            Debug.Log(nameof(OnBeforeAssemblyReload) + " " + DateTime.Now);
+            instance.BeforeAssemblyReload = DateTime.Now;
+            // Debug.Log(nameof(OnBeforeAssemblyReload) + " " + DateTime.Now);
         }
         
         private static void OnAfterAssemblyReload()
         {
-            Debug.Log(nameof(OnAfterAssemblyReload) + " " + DateTime.Now);
+            instance.AfterAssemblyReload = DateTime.Now;
+            Debug.Log("Reload time: " + (instance.AfterAssemblyReload - instance.BeforeAssemblyReload).TotalSeconds + ", " + "since last comp: " + (instance.BeforeAssemblyReload - instance.CompilationFinished).TotalSeconds);
+            // Debug.Log(nameof(OnAfterAssemblyReload) + " " + DateTime.Now);
         }
-
+    }
+    
+    internal class CompilationData
+    {
         internal class IterativeCompilationData
         {
             public List<CompilationData> iterations;
         }
+        
         public DateTime CompilationFinished;
         public DateTime CompilationStarted;
         public DateTime AfterAssemblyReload;
         public DateTime BeforeAssemblyReload;
+        
         public List<AssemblyCompilationData> compilationData;
 
         public static IterativeCompilationData GetAll()
@@ -86,34 +120,37 @@ namespace Needle.CompilationVisualizer
                 beeData.traceEvents = beeData.traceEvents.Where(x => x.ts > 0).ToList();
                 var firstTs = beeData.traceEvents.First().ts;
                 var conv = TimeSpan.TicksPerMillisecond / 1000;
+                var offsetToFirstTs = TraceData.instance.CompilationStarted.Ticks / conv - firstTs;
+                
 
                 var cc = new CompilationData()
                 {
-                    CompilationStarted = new DateTime((beeData.traceEvents.First().ts - firstTs) * conv),
-                    CompilationFinished = new DateTime((beeData.traceEvents.Last().ts - firstTs) * conv),
+                    CompilationStarted = new DateTime((beeData.traceEvents.First().ts + offsetToFirstTs) * conv),
+                    CompilationFinished = new DateTime((beeData.traceEvents.Last().ts + offsetToFirstTs) * conv),
                     compilationData = beeData.traceEvents
                         .Where(x => x.name.Equals("Csc", StringComparison.Ordinal) && x.args.detail != null)
                         .Select(x => new AssemblyCompilationData()
                         {
                             assembly = "Library/ScriptAssemblies/" +
                                        Path.GetFileName(x.args.detail.Split(' ').FirstOrDefault()),
-                            StartTime = new DateTime((x.ts - firstTs) * conv),
-                            EndTime = new DateTime((x.ts - firstTs + x.dur) * conv),
+                            StartTime = new DateTime((x.ts + offsetToFirstTs) * conv),
+                            EndTime = new DateTime((x.ts + offsetToFirstTs + x.dur) * conv),
                         })
                         .OrderBy(x => x.StartTime)
                         .ToList()
                 };
 
-                cc.AfterAssemblyReload = cc.CompilationFinished;
-                cc.BeforeAssemblyReload = cc.CompilationStarted;
+                cc.AfterAssemblyReload = TraceData.instance.AfterAssemblyReload;
+                cc.BeforeAssemblyReload = TraceData.instance.BeforeAssemblyReload;
 
                 // foreach (var asm in cc.compilationData)
                 //     Debug.Log(asm);
 
                 return cc;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Debug.LogException(e);
                 return null;
             }
         }

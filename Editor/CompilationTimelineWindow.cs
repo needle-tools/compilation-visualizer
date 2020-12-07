@@ -184,9 +184,6 @@ namespace Needle.CompilationVisualizer
             
             Debug.Log("Comp finished at " + now);
             Refresh();
-#if UNITY_2021_1_OR_NEWER
-            data.iterations.Last().BeforeAssemblyReload = now;
-#endif
             ClearCaches();
         }
 
@@ -195,9 +192,6 @@ namespace Needle.CompilationVisualizer
             var now = DateTime.Now;
             Debug.Log("reload finished at " + now);
             Refresh();
-#if UNITY_2021_1_OR_NEWER
-            data.iterations.Last().AfterAssemblyReload = now;
-#endif
             ClearCaches();
         }
 
@@ -207,8 +201,7 @@ namespace Needle.CompilationVisualizer
             assemblyDependantDict.Clear();
 
             // clear selection if not in result data
-            if (selectedEntry != null &&
-                !data.iterations.Any(c => c.compilationData.Any(x => selectedEntry.Equals(x.assembly, StringComparison.Ordinal))))
+            if (selectedEntry != null && data?.iterations != null && !data.iterations.Any(c => c.compilationData.Any(x => selectedEntry.Equals(x.assembly, StringComparison.Ordinal))))
                 selectedEntry = null;
         }
 
