@@ -230,8 +230,6 @@ namespace Needle.CompilationVisualizer
             if (data?.iterations == null || !data.iterations.Any() || data.iterations.First().compilationData == null || data.iterations.First().compilationData.Any())
                 data = CompilationData.GetAll();
             
-            // data = CompilationAnalysis.CompilationData.GetAll();
-            
             var gotData = data != null && data.iterations != null && data.iterations.Count > 0;
             var gotSelection = !string.IsNullOrEmpty(selectedEntry);
             
@@ -245,14 +243,6 @@ namespace Needle.CompilationVisualizer
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
             
-            // #if UNITY_2021_1_OR_NEWER
-            // // For Testing on 2021
-            // if (GUILayout.Button("Fetch Trace", EditorStyles.toolbarButton))
-            // {
-            //     data = CompilationData.GetAll();
-            // }
-            // #endif
-            
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.Space();
 
@@ -263,7 +253,9 @@ namespace Needle.CompilationVisualizer
             
             var totalSpan = TimeSpan.Zero;
             var totalCompilationSpan = TimeSpan.Zero;
+#if UNITY_2021_1_OR_NEWER
             var firstToLastAssemblyCompilationSpan = TimeSpan.Zero;
+#endif
             var totalCompiledAssemblyCount = 0;
             
             GUILayout.FlexibleSpace();
@@ -274,7 +266,7 @@ namespace Needle.CompilationVisualizer
                     totalSpan = DateTime.Now - data.iterations.First().CompilationStarted;
                 
                 // workaround for Editor restart issues where compilation events are not complete
-                if(totalSpan.TotalSeconds > 7200) {
+                if(totalSpan.TotalSeconds > 1800) {
                     Clear();
                     return; // need to cancel drawing here, otherwise we end up in an infinite loop
                 }
@@ -286,9 +278,11 @@ namespace Needle.CompilationVisualizer
                 if (totalCompilationSpan.TotalSeconds < 0) // timespan adjusted during compilation
                     totalCompilationSpan = DateTime.Now - data.iterations.First().CompilationStarted;
 
+#if UNITY_2021_1_OR_NEWER
                 firstToLastAssemblyCompilationSpan = data.iterations
                     .Select(x => x.compilationData.Last().EndTime - x.compilationData.First().StartTime)
                     .Aggregate((result, item) => result + item);
+#endif
                 
                 var totalReloadSpan = data.iterations
                     .Select(item => item.AfterAssemblyReload - item.BeforeAssemblyReload)
@@ -298,7 +292,9 @@ namespace Needle.CompilationVisualizer
                 
                 GUILayout.Label("Total: " + totalSpan.TotalSeconds.ToString("F2") + "s");
                 GUILayout.Label("Compilation: " + totalCompilationSpan.TotalSeconds.ToString("F2") + "s");
+#if UNITY_2021_1_OR_NEWER
                 GUILayout.Label("Csc: " + firstToLastAssemblyCompilationSpan.TotalSeconds.ToString("F2") + "s");
+#endif
                 GUILayout.Label("Reload: " + totalReloadSpan.TotalSeconds.ToString("F2") + "s");
                 GUILayout.Label("Compiled Assemblies: " + totalCompiledAssemblyCount);
                 if (data.iterations.Count > 1)
