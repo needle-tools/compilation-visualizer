@@ -180,17 +180,12 @@ namespace Needle.CompilationVisualizer
 
         private void CompilationFinished(object obj)
         {
-            var now = DateTime.Now;
-            
-            Debug.Log("Comp finished at " + now);
             Refresh();
             ClearCaches();
         }
 
         private void AfterAssemblyReload()
         {
-            var now = DateTime.Now;
-            Debug.Log("reload finished at " + now);
             Refresh();
             ClearCaches();
         }
@@ -268,6 +263,7 @@ namespace Needle.CompilationVisualizer
             
             var totalSpan = TimeSpan.Zero;
             var totalCompilationSpan = TimeSpan.Zero;
+            var firstToLastAssemblyCompilationSpan = TimeSpan.Zero;
             var totalCompiledAssemblyCount = 0;
             
             GUILayout.FlexibleSpace();
@@ -290,6 +286,10 @@ namespace Needle.CompilationVisualizer
                 if (totalCompilationSpan.TotalSeconds < 0) // timespan adjusted during compilation
                     totalCompilationSpan = DateTime.Now - data.iterations.First().CompilationStarted;
 
+                firstToLastAssemblyCompilationSpan = data.iterations
+                    .Select(x => x.compilationData.Last().EndTime - x.compilationData.First().StartTime)
+                    .Aggregate((result, item) => result + item);
+                
                 var totalReloadSpan = data.iterations
                     .Select(item => item.AfterAssemblyReload - item.BeforeAssemblyReload)
                     .Aggregate((result, item) => result + item);
@@ -298,6 +298,7 @@ namespace Needle.CompilationVisualizer
                 
                 GUILayout.Label("Total: " + totalSpan.TotalSeconds.ToString("F2") + "s");
                 GUILayout.Label("Compilation: " + totalCompilationSpan.TotalSeconds.ToString("F2") + "s");
+                GUILayout.Label("Csc: " + firstToLastAssemblyCompilationSpan.TotalSeconds.ToString("F2") + "s");
                 GUILayout.Label("Reload: " + totalReloadSpan.TotalSeconds.ToString("F2") + "s");
                 GUILayout.Label("Compiled Assemblies: " + totalCompiledAssemblyCount);
                 if (data.iterations.Count > 1)
@@ -807,7 +808,8 @@ namespace Needle.CompilationVisualizer
             menu.AddItem(new GUIContent("Open Chrome and Trace File"), false, () =>
             {
                 EditorUtility.RevealInFinder("Library/Bee/profiler.json");
-                Application.OpenURL("chrome://trace");
+                // Application.OpenURL("chrome://trace"); // Chrome's built-in viewer; can't open that as URL directly
+                Application.OpenURL("https://ui.perfetto.dev/assets/catapult_trace_viewer.html"); // same viewer but as URL
             });
             #endif
         }

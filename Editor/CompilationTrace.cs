@@ -49,32 +49,21 @@ namespace Needle.CompilationVisualizer
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
 
-        private static void OnCompilationStarted(object obj)
-        {
-            instance.CompilationStarted = DateTime.Now;
-            // Debug.Log(nameof(OnCompilationStarted) + " " + DateTime.Now);
-        }
-
-        private static void OnCompilationFinished(object obj)
-        {
-            instance.CompilationFinished = DateTime.Now;
-            // Debug.Log(nameof(OnCompilationFinished) + " " + DateTime.Now);
-        }
-
-
-
-        private static void OnBeforeAssemblyReload()
-        {
-            instance.BeforeAssemblyReload = DateTime.Now;
-            // Debug.Log(nameof(OnBeforeAssemblyReload) + " " + DateTime.Now);
-        }
-        
-        private static void OnAfterAssemblyReload()
-        {
-            instance.AfterAssemblyReload = DateTime.Now;
-            Debug.Log("Reload time: " + (instance.AfterAssemblyReload - instance.BeforeAssemblyReload).TotalSeconds + ", " + "since last comp: " + (instance.BeforeAssemblyReload - instance.CompilationFinished).TotalSeconds);
+        private static void OnCompilationStarted(object obj) => instance.CompilationStarted = DateTime.Now;
+        private static void OnCompilationFinished(object obj) => instance.CompilationFinished = DateTime.Now;
+        private static void OnBeforeAssemblyReload() => instance.BeforeAssemblyReload = DateTime.Now;
+        private static void OnAfterAssemblyReload() => instance.AfterAssemblyReload = DateTime.Now;
+        // {       
+            // Debug.Log("Reload time: " + (instance.AfterAssemblyReload - instance.BeforeAssemblyReload).TotalSeconds + ", " + "since last comp: " + (instance.BeforeAssemblyReload - instance.CompilationFinished).TotalSeconds);
             // Debug.Log(nameof(OnAfterAssemblyReload) + " " + DateTime.Now);
-        }
+
+            // string Log(DateTime a, DateTime b) => (b - a).TotalSeconds + "s ";
+            //
+            // Debug.Log("from start to finish: " + Log(instance.CompilationStarted, instance.AfterAssemblyReload) +
+            //           "\ncompilation: " + Log(instance.CompilationStarted, instance.CompilationFinished) + 
+            //           "\nend of comp to begin reload: " + Log(instance.CompilationFinished, instance.BeforeAssemblyReload) + 
+            //           "\nreload: " + Log(instance.BeforeAssemblyReload, instance.AfterAssemblyReload));
+        // }
     }
     
     internal class CompilationData
@@ -117,32 +106,40 @@ namespace Needle.CompilationVisualizer
                         File.ReadAllText(ProfilerJson)); // "profiler.json")); // "Library/Bee/profiler.json"));
                 if (beeData.traceEvents == null || !beeData.traceEvents.Any()) return null;
 
-                beeData.traceEvents = beeData.traceEvents.Where(x => x.ts > 0).ToList();
-                var firstTs = beeData.traceEvents.First().ts;
-                var conv = TimeSpan.TicksPerMillisecond / 1000;
-                var offsetToFirstTs = TraceData.instance.CompilationStarted.Ticks / conv - firstTs;
+                beeData.traceEvents = beeData.traceEvents
+                    .Where(x => x.ts > 0)
+                    .OrderBy(x => x.ts)
+                    .ToList();
+                var ticksPerMicrosecond = TimeSpan.TicksPerMillisecond / 1000;
                 
+                var firstTs = beeData.traceEvents.First().ts;
+                var lastTs = beeData.traceEvents.Last().ts;
+                var beeCompilationSpan = lastTs - firstTs;
+                var unityCompilationSpan = (TraceData.instance.CompilationFinished - TraceData.instance.CompilationStarted).Ticks / ticksPerMicrosecond;
+                var offsetToFirstTs = TraceData.instance.CompilationStarted.Ticks / ticksPerMicrosecond - firstTs + (unityCompilationSpan - beeCompilationSpan);
 
                 var cc = new CompilationData()
                 {
-                    CompilationStarted = new DateTime((beeData.traceEvents.First().ts + offsetToFirstTs) * conv),
-                    CompilationFinished = new DateTime((beeData.traceEvents.Last().ts + offsetToFirstTs) * conv),
+                    CompilationStarted = TraceData.instance.CompilationStarted,
+                    CompilationFinished = TraceData.instance.CompilationFinished,
+                    AfterAssemblyReload = TraceData.instance.AfterAssemblyReload,
+                    BeforeAssemblyReload = TraceData.instance.BeforeAssemblyReload,
                     compilationData = beeData.traceEvents
                         .Where(x => x.name.Equals("Csc", StringComparison.Ordinal) && x.args.detail != null)
                         .Select(x => new AssemblyCompilationData()
                         {
                             assembly = "Library/ScriptAssemblies/" +
                                        Path.GetFileName(x.args.detail.Split(' ').FirstOrDefault()),
-                            StartTime = new DateTime((x.ts + offsetToFirstTs) * conv),
-                            EndTime = new DateTime((x.ts + offsetToFirstTs + x.dur) * conv),
+                            StartTime = new DateTime((x.ts + offsetToFirstTs) * ticksPerMicrosecond),
+                            EndTime = new DateTime((x.ts + offsetToFirstTs + x.dur) * ticksPerMicrosecond),
                         })
-                        .OrderBy(x => x.StartTime)
                         .ToList()
                 };
 
-                cc.AfterAssemblyReload = TraceData.instance.AfterAssemblyReload;
-                cc.BeforeAssemblyReload = TraceData.instance.BeforeAssemblyReload;
-
+                // var beeCompilationStarted = new DateTime((beeData.traceEvents.First().ts) * conv);
+                // var beeCompilationFinished = new DateTime((beeData.traceEvents.Last().ts) * conv);
+                // Debug.Log(beeCompilationStarted + " - " + cc.CompilationStarted + ", " + beeCompilationFinished + " - " + cc.CompilationFinished);
+                
                 // foreach (var asm in cc.compilationData)
                 //     Debug.Log(asm);
 
