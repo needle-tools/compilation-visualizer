@@ -2,6 +2,11 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-preview] - 2020-12-08
+- added experimental support for Unity 2021 (new compilation pipeline)
+- added additional timing info on 2021+ for "entire compilation" vs "Csc compilation process"
+- added dropdown for opening profiler.json and Chrome Trace visualizer for a more detailled look at compilation data
+
 ## [1.2.2] - 2020-10-25
 - fixed NullRef with empty iterations data (#3)
 - fixed: Recompile can only be pressed when not compiling already
