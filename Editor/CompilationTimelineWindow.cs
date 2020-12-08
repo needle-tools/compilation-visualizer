@@ -288,6 +288,12 @@ namespace Needle.CompilationVisualizer
                     .Select(item => item.AfterAssemblyReload - item.BeforeAssemblyReload)
                     .Aggregate((result, item) => result + item);
 
+                // another safeguard against broken compilation
+                if (totalReloadSpan.TotalSeconds > 1800) {
+                    Clear();
+                    return;
+                }
+                
                 totalCompiledAssemblyCount = data.iterations.Select(x => x.compilationData.Count).Sum();
                 
                 GUILayout.Label("Total: " + totalSpan.TotalSeconds.ToString("F2") + "s");

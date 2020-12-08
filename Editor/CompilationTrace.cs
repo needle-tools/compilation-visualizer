@@ -116,7 +116,8 @@ namespace Needle.CompilationVisualizer
                 var lastTs = beeData.traceEvents.Last().ts;
                 var beeCompilationSpan = lastTs - firstTs;
                 var unityCompilationSpan = (TraceData.instance.CompilationFinished - TraceData.instance.CompilationStarted).Ticks / ticksPerMicrosecond;
-                var offsetToFirstTs = TraceData.instance.CompilationStarted.Ticks / ticksPerMicrosecond - firstTs + (unityCompilationSpan - beeCompilationSpan);
+                var compilationSpanOffset = Math.Max(0, unityCompilationSpan - beeCompilationSpan);
+                var offsetToFirstTs = TraceData.instance.CompilationStarted.Ticks / ticksPerMicrosecond - firstTs + compilationSpanOffset;
 
                 var cc = new CompilationData()
                 {
