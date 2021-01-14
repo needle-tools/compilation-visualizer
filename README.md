@@ -10,7 +10,23 @@ Besides showing a graphical view of compilation, selecting an assembly shows bot
 The screenshots show full compilations; but the timeline works as well for partial compilations (e.g. you changed a single script and Unity only recompiles the relevant parts of the dependency chain).
 
 ## Quick Start
-Install via OpenUPM: https://openupm.com/packages/com.needle.compilation-visualizer/
+
+Compilation Visualizer is available on OpenUPM: https://openupm.com/packages/com.needle.compilation-visualizer/  
+
+If you're on Unity 2019.4+:
+- open `Edit/Project Settings/Package Manager`
+- add a new Scoped Registry:
+  ```
+  Name: OpenUPM
+  URL:  https://package.openupm.com/
+  Scope(s): com.needle.stochastic-texturing
+  ```
+- click <kbd>Save</kbd>
+- open Package Manager
+- click <kbd>+</kbd>
+- select <kbd>Add from Git URL</kbd>
+- paste `com.needle.compilation-visualizer`
+- click <kbd>Add</kbd>.
 
 You can open the **Compilation Visualizer** by selecting `Window > Analysis > Compilation Timeline`.
 
