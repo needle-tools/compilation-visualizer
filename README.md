@@ -19,7 +19,7 @@ If you're on Unity 2019.4+:
   ```
   Name: OpenUPM
   URL:  https://package.openupm.com/
-  Scope(s): com.needle.stochastic-texturing
+  Scope(s): com.needle.compilation-visualizer
   ```
 - click <kbd>Save</kbd>
 - open Package Manager
