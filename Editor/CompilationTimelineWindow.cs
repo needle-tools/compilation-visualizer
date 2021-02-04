@@ -820,7 +820,9 @@ namespace Needle.CompilationVisualizer
         }
         
         protected void ShowButton(Rect r) {
+#if !UNITY_2021_1_OR_NEWER // TODO need to figure out how to lock results on 2021+
             windowLockState.ShowButton(r, Styles.lockButton);
+#endif
         }
     }
 }

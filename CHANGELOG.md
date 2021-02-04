@@ -2,6 +2,12 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2021-02-04
+- added proper coloring for Light skin support
+- changed hacky Bee recompile to new `RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache)`
+- removed support for 2021.1.0a1–2021.1.0b1 (supported on 0b2+)
+- removed result locking support on 2021 for now (as it doesn't currently work due to the compilation changes there)
+
 ## [1.3.0-preview] - 2020-12-08
 - added experimental support for Unity 2021 (new compilation pipeline)
 - added additional timing info on 2021+ for "entire compilation" vs "Csc compilation process"
