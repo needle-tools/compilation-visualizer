@@ -33,13 +33,12 @@ namespace Needle.CompilationVisualizer
             win.Show();
         }
 
-        // public bool allowRefresh = true;
         private bool AllowRefresh => !windowLockState.IsLocked;
         
         public EditorWindowLockState windowLockState = new EditorWindowLockState();
         public bool compactDrawing = true;
         public int threadCountMultiplier = 1;
-        public IterativeCompilationData data;
+        private IterativeCompilationData data;
         
         private void OnEnable() {
             #if UNITY_2019_1_OR_NEWER
@@ -552,16 +551,9 @@ namespace Needle.CompilationVisualizer
 
         void RecompileEverything()
         {
-#if UNITY_2021_1_OR_NEWER || BEE_COMPILATION_PIPELINE
-            if(Directory.Exists("Library/Bee")) {
-                try {
-                    Directory.Delete("Library/Bee", true);
-                }
-                catch(IOException) {}
-            }
-            AssetDatabase.Refresh();
-#endif
-#if UNITY_2019_3_OR_NEWER
+#if UNITY_2021_1_OR_NEWER
+            CompilationPipeline.RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache);         
+#elif UNITY_2019_3_OR_NEWER
             CompilationPipeline.RequestScriptCompilation();
 #elif UNITY_2017_1_OR_NEWER
              var editorAssembly = System.Reflection.Assembly.GetAssembly(typeof(Editor));
