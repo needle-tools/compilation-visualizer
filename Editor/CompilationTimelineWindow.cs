@@ -105,8 +105,7 @@ namespace Needle.CompilationVisualizer
 
         class WindowStyles
         {
-            // public GUIStyle labelStyle = new GUIStyle(EditorStyles.miniLabel);
-            public readonly GUIStyle background = "ProfilerGraphBackground";
+            public readonly Texture2D background;
             public readonly GUIStyle miniLabel = EditorStyles.miniLabel;
             public readonly GUIStyle overflowMiniLabel = new GUIStyle(EditorStyles.miniLabel) {
                 clipping = TextClipping.Overflow
@@ -116,6 +115,21 @@ namespace Needle.CompilationVisualizer
                 alignment = TextAnchor.UpperRight
             };
             public readonly GUIStyle lockButton = "IN LockButton";
+
+            public WindowStyles()
+            {
+                background = new Texture2D(1, 1);
+                background.SetPixel(0,0,UnityEditor.EditorGUIUtility.isProSkin ? new Color(52/255f,52/255f,52/255f) : new Color(207/255f,207/255f,207/255f));
+                background.Apply();
+
+                connectorColor    = UnityEditor.EditorGUIUtility.isProSkin ? new Color(1f, 1f, 0.7f, 0.4f) : new Color(0.3f,0.3f,0.1f,0.4f);
+                connectorColor2   = UnityEditor.EditorGUIUtility.isProSkin ? new Color(0.7f, 1f, 1f, 0.4f) : new Color(0.1f, 0.3f, 0.3f, 0.4f);
+                verticalLineColor = UnityEditor.EditorGUIUtility.isProSkin ? new Color(1, 1, 1, 0.1f) :      new Color(0,0,0,0.1f);
+            }
+
+            public readonly Color connectorColor;
+            public readonly Color connectorColor2;
+            public readonly Color verticalLineColor;
         }
 
         private void OnDisable() {
@@ -345,7 +359,7 @@ namespace Needle.CompilationVisualizer
                 backgroundRect.xMin -= 200;
                 backgroundRect.width += 200;
                 #endif
-                Styles.background.Draw(backgroundRect, false, false, false, false);
+                GUI.DrawTexture(backgroundRect, Styles.background);
                 DrawTimeHeader(viewRect, scrollPosition, (float) totalSeconds * 1000f);
             }
 
@@ -616,7 +630,7 @@ namespace Needle.CompilationVisualizer
             var lineCount = (int) (totalSeconds * linesPerSecond) + 2;
             var lineDistance = viewRect.width / (totalSeconds * linesPerSecond);
 
-            GUI.color = new Color(1, 1, 1, 0.1f);
+            GUI.color = styles.verticalLineColor;
             for (int i = 0; i < lineCount; i++) {
                 GUI.DrawTexture(new Rect(i * lineDistance + viewRect.xMin, viewRect.yMin, 1, viewRect.height), Texture2D.whiteTexture);
             }
@@ -625,7 +639,7 @@ namespace Needle.CompilationVisualizer
         }
 
         Color ColorFromValue(float value, float min = 0.5f, float max = 5f, float hueRange = 0.25f) {
-            return Color.HSVToRGB(Mathf.InverseLerp(max, min, value) * hueRange, 0.3f, 0.3f);
+            return Color.HSVToRGB(Mathf.InverseLerp(max, min, value) * hueRange, UnityEditor.EditorGUIUtility.isProSkin ? 0.3f : 0.25f, UnityEditor.EditorGUIUtility.isProSkin ? 0.3f : 0.8f);
         }
 
         public Vector2 scrollPosition;
@@ -720,9 +734,6 @@ namespace Needle.CompilationVisualizer
             }
         }
 
-        private static readonly Color ConnectorColor = new Color(1f, 1f, 0.7f, 0.4f);
-        private static readonly Color ConnectorColor2 = new Color(0.7f, 1f, 1f, 0.4f);
-
         private void DrawConnectors(AssemblyCompilationData c,
             Rect originalRect) {
             void DrawConnector(int i, IList<Assembly> assemblyList, bool alignRight, Color color) {
@@ -774,7 +785,7 @@ namespace Needle.CompilationVisualizer
                 adjustedRect.x = adjustedRect.xMin + 1;
                 adjustedRect.width = adjustedRect.height = 1;
                 for (int i = 0; i < assembly.assemblyReferences.Length; i++) {
-                    DrawConnector(i, assembly.assemblyReferences, false, ConnectorColor);
+                    DrawConnector(i, assembly.assemblyReferences, false, styles.connectorColor);
                 }
             }
 
@@ -783,7 +794,7 @@ namespace Needle.CompilationVisualizer
                 adjustedRect.x = adjustedRect.xMin + 1;
                 adjustedRect.width = adjustedRect.height = 1;
                 for (int i = 0; i < dependantList.Count; i++) {
-                    DrawConnector(i, dependantList, true, ConnectorColor2);
+                    DrawConnector(i, dependantList, true, styles.connectorColor2);
                 }
             }
         }
