@@ -292,9 +292,10 @@ namespace Needle.CompilationVisualizer
                     totalCompilationSpan = DateTime.Now - data.iterations.First().CompilationStarted;
 
 #if UNITY_2021_1_OR_NEWER
-                firstToLastAssemblyCompilationSpan = data.iterations
-                    .Select(x => x.compilationData.Last().EndTime - x.compilationData.First().StartTime)
-                    .Aggregate((result, item) => result + item);
+                var dataToAggregate= data.iterations
+                        .Where(x => x is {compilationData: { }} && x.compilationData.Any())
+                        .Select(x => x.compilationData.Last().EndTime - x.compilationData.First().StartTime);
+                firstToLastAssemblyCompilationSpan = dataToAggregate.Any() ? dataToAggregate.Aggregate((result, item) => result + item) : new TimeSpan(0);
 #endif
                 
                 var totalReloadSpan = data.iterations
