@@ -281,7 +281,7 @@ namespace Needle.CompilationVisualizer
                 // workaround for Editor restart issues where compilation events are not complete
                 if(totalSpan.TotalSeconds > 1800) {
                     Clear();
-                    return; // need to cancel drawing here, otherwise we end up in an infinite loop
+                    GUIUtility.ExitGUI();
                 }
                 
                 totalCompilationSpan = data.iterations
@@ -305,7 +305,7 @@ namespace Needle.CompilationVisualizer
                 // another safeguard against broken compilation
                 if (totalReloadSpan.TotalSeconds > 1800) {
                     Clear();
-                    return;
+                    GUIUtility.ExitGUI();
                 }
                 
                 totalCompiledAssemblyCount = data.iterations.Select(x => x.compilationData.Count).Sum();
@@ -813,9 +813,11 @@ namespace Needle.CompilationVisualizer
             });
             menu.AddItem(new GUIContent("Open Chrome and Trace File"), false, () =>
             {
-                EditorUtility.RevealInFinder("Library/Bee/profiler.json");
+                #if UNITY_2021_2_OR_NEWER
+                EditorUtility.RevealInFinder("Library/Bee/fullprofile.json");
+                #endif
                 // Application.OpenURL("chrome://trace"); // Chrome's built-in viewer; can't open that as URL directly
-                Application.OpenURL("https://ui.perfetto.dev/assets/catapult_trace_viewer.html"); // same viewer but as URL
+                Application.OpenURL("https://ui.perfetto.dev/v15.0.5/assets/catapult_trace_viewer.html"); // same viewer but as URL
             });
             #endif
         }

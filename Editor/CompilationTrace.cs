@@ -96,18 +96,26 @@ namespace Needle.CompilationVisualizer
 
         private static CompilationData ConvertBeeDataToCompilationData()
         {
+            #if UNITY_2021_2_OR_NEWER
+            const string ProfilerJson = "Library/Bee/fullprofile.json";
+            #else
             const string ProfilerJson = "Library/Bee/profiler.json";
+            #endif
             if (!File.Exists(ProfilerJson)) return null;
             
             try
             {
                 var beeData =
                     JsonUtility.FromJson<BeeProfilerData>(
-                        File.ReadAllText(ProfilerJson)); // "profiler.json")); // "Library/Bee/profiler.json"));
+                        File.ReadAllText(ProfilerJson));
                 if (beeData.traceEvents == null || !beeData.traceEvents.Any()) return null;
 
                 beeData.traceEvents = beeData.traceEvents
-                    .Where(x => x.ts > 0)
+                    .Where(x => x.ts > 0
+                                #if UNITY_2021_2_OR_NEWER
+                                && x.pid == "bee_backend"
+                                #endif
+                                )
                     .OrderBy(x => x.ts)
                     .ToList();
                 var ticksPerMicrosecond = TimeSpan.TicksPerMillisecond / 1000;
@@ -148,7 +156,7 @@ namespace Needle.CompilationVisualizer
             }
             catch (Exception e)
             {
-                Debug.LogException(e);
+                Debug.LogError("Couldn't fetch compilation data: Please report a bug to hi@needle.tools.\n" + e);
                 return null;
             }
         }
@@ -164,7 +172,7 @@ namespace Needle.CompilationVisualizer
     [Serializable]
     internal class TraceEvent {
         public string cat; 
-        public int pid; 
+        public string pid; 
         public int tid; 
         public long ts; 
         public string ph; 
