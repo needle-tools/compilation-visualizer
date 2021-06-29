@@ -2,6 +2,10 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2021-06-29
+- added support for 2021.2.0b1+
+- fixed some potential nullrefs when previous compilation trace can't be found
+
 ## [1.4.0] - 2021-02-04
 - added proper coloring for Light skin support
 - changed hacky Bee recompile to new `RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache)`
