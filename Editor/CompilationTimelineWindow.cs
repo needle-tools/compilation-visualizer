@@ -11,6 +11,7 @@ using Needle.EditorGUIUtility;
 using UnityEditor;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal;
 using Assembly = UnityEditor.Compilation.Assembly;
@@ -237,9 +238,10 @@ namespace Needle.CompilationVisualizer
 
         private void Clear()
         {
-            #if !BEE_COMPILATION_PIPELINE
+            // #if !BEE_COMPILATION_PIPELINE
             CompilationData.Clear();
-            #endif
+            data = CompilationData.GetAll();
+            // #endif
         }
         
         private void OnGUI()
@@ -258,37 +260,22 @@ namespace Needle.CompilationVisualizer
                 if(AllowRefresh)
                     Clear();
                 RecompileEverything();
+                GUIUtility.ExitGUI();
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
             }
 
-            // if (GUILayout.Button("Compile Player Scripts", EditorStyles.toolbarButton))
-            // {
-            //     
-            // }
+            if (GUILayout.Button("Compile Player Scripts", EditorStyles.toolbarButton))
+            {
+                CompilePlayerScripts();
+                GUIUtility.ExitGUI();
+            }
 
-            var actionCompilePlayer = false;
-            if (DropDownToggle(ref actionCompilePlayer, new GUIContent("Compile Player Scripts"), "toolbarDropDownToggle", out var buttonRect))
+            var buttonRect = GUILayoutUtility.GetLastRect();
+            if (EditorGUILayout.DropdownButton(new GUIContent(""), FocusType.Passive, EditorStyles.toolbarDropDown))
             {
                 if (!PlayerScriptsSettingsWindow.ShowAtPosition(buttonRect, this))
                     return;
                 GUIUtility.ExitGUI();
-            }
-
-            if (actionCompilePlayer)
-            {
-                var settings = new ScriptCompilationSettings
-                {
-                    group = BuildPipeline.GetBuildTargetGroup(buildTarget),
-                    target = buildTarget,
-                    options = ScriptCompilationOptions.None
-                };
-                
-                // Debug.Log("Compiling Player Scripts for " + settings.group + "/" + settings.target);
-                
-                EditorUtility.DisplayProgressBar("Compiling Player Scripts", "Build Target: " + settings.target + " (" + settings.group + ")", 0.1f);
-                var results = PlayerBuildInterface.CompilePlayerScripts(settings, "Temp/PlayerScriptCompilation/");
-                // Debug.Log(string.Join("\n", results.assemblies));
-                EditorUtility.ClearProgressBar();
             }
             
             EditorGUI.EndDisabledGroup();
@@ -310,9 +297,9 @@ namespace Needle.CompilationVisualizer
             if(gotData && data.iterations.Count > 0)
             {
                 totalSpan = data.iterations.Last().AfterAssemblyReload - data.iterations.First().CompilationStarted;
-                if (totalSpan.TotalSeconds < -10000)
+                if (totalSpan.TotalSeconds < -1)
                     totalSpan = data.iterations.Last().CompilationFinished - data.iterations.First().CompilationStarted;
-                if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
+                if (totalSpan.TotalSeconds <= 0) // timespan adjusted during compilation
                     totalSpan = DateTime.Now - data.iterations.First().CompilationStarted;
                 
                 // workaround for Editor restart issues where compilation events are not complete
@@ -344,6 +331,8 @@ namespace Needle.CompilationVisualizer
                     Clear();
                     GUIUtility.ExitGUI();
                 }
+                if(totalReloadSpan.TotalSeconds < 0)
+                    totalReloadSpan = TimeSpan.FromSeconds(0);
                 
                 totalCompiledAssemblyCount = data.iterations.Select(x => x.compilationData.Count).Sum();
                 
@@ -530,7 +519,7 @@ namespace Needle.CompilationVisualizer
                 var wSpan2 = lastSectionEndTime - iterationData.CompilationFinished;
                 var x2 = (float) (xSpan2.TotalSeconds / totalSeconds) * totalWidth;
                 var w2 = (float) (wSpan2.TotalSeconds / totalSeconds) * totalWidth;
-                DrawReloadIndicator(viewRect, ShowAssemblyReloads, x2, w2, (float) (iterationData.AfterAssemblyReload - iterationData.CompilationFinished).TotalSeconds);
+                DrawReloadIndicator(viewRect, ShowAssemblyReloads, x2, w2, Mathf.Max(0, (float) (iterationData.AfterAssemblyReload - iterationData.CompilationFinished).TotalSeconds));
             }
             lastTotalHeight = currentHeight;
 
@@ -587,6 +576,27 @@ namespace Needle.CompilationVisualizer
             GUI.EndScrollView();
         }
 
+        [Shortcut("needle-compilation-visualizer-" + nameof(CompilePlayerScripts))]
+        void CompilePlayerScripts()
+        {
+            if(AllowRefresh)
+                Clear();
+            
+            var settings = new ScriptCompilationSettings
+            {
+                group = BuildPipeline.GetBuildTargetGroup(buildTarget),
+                target = buildTarget,
+                options = ScriptCompilationOptions.None
+            };
+                
+            // Debug.Log("Compiling Player Scripts for " + settings.group + "/" + settings.target);
+                
+            EditorUtility.DisplayProgressBar("Compiling Player Scripts", "Build Target: " + settings.target + " (" + settings.group + ")", 0.1f);
+            var results = PlayerBuildInterface.CompilePlayerScripts(settings, "Temp/PlayerScriptCompilation/");
+            // Debug.Log(string.Join("\n", results.assemblies));
+            EditorUtility.ClearProgressBar();
+        }
+        
         void RecompileEverything()
         {
 #if UNITY_2021_1_OR_NEWER
@@ -864,17 +874,6 @@ namespace Needle.CompilationVisualizer
             windowLockState.ShowButton(r, Styles.lockButton);
 #endif
         }
-        
-        // from EditorGUILayout.DropDownToggle (internal)
-        internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleButtonStyle, out Rect buttonRect)
-        {
-            Rect rect = GUILayoutUtility.GetRect(content, toggleButtonStyle);
-            var flag = EditorGUI.DropdownButton(new Rect(rect.xMax - toggleButtonStyle.padding.right, rect.y, toggleButtonStyle.padding.right, rect.height), GUIContent.none, FocusType.Passive, GUIStyle.none);
-            if (!flag)
-                toggled = GUI.Toggle(rect, toggled, content, toggleButtonStyle);
-            buttonRect = rect;
-            return flag;
-        }
 
         internal class PlayerScriptsSettingsWindow : EditorWindow
         {
@@ -900,7 +899,7 @@ namespace Needle.CompilationVisualizer
                 background = "grey_border";
                 buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
                 parentWindow = parentWnd;
-                var windowSize = new Vector2(250f, UnityEditor.EditorGUIUtility.singleLineHeight + 2 * 4);
+                var windowSize = new Vector2(320f, UnityEditor.EditorGUIUtility.singleLineHeight + 2 * 4);
                 ShowAsDropDown(buttonRect, windowSize);
             }
             
@@ -913,6 +912,7 @@ namespace Needle.CompilationVisualizer
 
             private void OnGUI()
             {
+                if (background == null) background = "grey_border";
                 var wnd = new Rect(0, 0, position.width, position.height);
 
                 var innerWnd = wnd;

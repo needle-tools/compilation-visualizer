@@ -94,13 +94,14 @@ namespace Needle.CompilationVisualizer
             };
         }
 
+#if UNITY_2021_2_OR_NEWER
+        const string ProfilerJson = "Library/Bee/fullprofile.json";
+#else
+        const string ProfilerJson = "Library/Bee/profiler.json";
+#endif
+        
         private static CompilationData ConvertBeeDataToCompilationData()
         {
-            #if UNITY_2021_2_OR_NEWER
-            const string ProfilerJson = "Library/Bee/fullprofile.json";
-            #else
-            const string ProfilerJson = "Library/Bee/profiler.json";
-            #endif
             if (!File.Exists(ProfilerJson)) return null;
             
             try
@@ -159,6 +160,12 @@ namespace Needle.CompilationVisualizer
                 Debug.LogError("Couldn't fetch compilation data: Please report a bug to hi@needle.tools.\n" + e);
                 return null;
             }
+        }
+
+        public static void Clear()
+        {
+            if (File.Exists(ProfilerJson))
+                File.Delete(ProfilerJson);
         }
     }
 
