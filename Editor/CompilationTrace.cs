@@ -143,11 +143,25 @@ namespace Needle.CompilationVisualizer
                             StartTime = new DateTime((x.ts + offsetToFirstTs) * ticksPerMicrosecond),
                             EndTime = new DateTime((x.ts + offsetToFirstTs + x.dur) * ticksPerMicrosecond),
                         })
+                        // hack to remove double Csc entries in trace file
+                        .ToLookup(x => x.assembly, x => x)
+                        .Select(x => x.First())
+                        // end hack
                         .ToList()
                 };
 
-                // var beeCompilationStarted = new DateTime((beeData.traceEvents.First().ts) * conv);
-                // var beeCompilationFinished = new DateTime((beeData.traceEvents.Last().ts) * conv);
+                // fix up incorrect reported compilation times
+                if(cc.compilationData != null && cc.compilationData.Any())
+                {
+                    // fix reported start/end times for compilation
+                    var minStart = cc.compilationData.Min(x => x.StartTime);
+                    var maxEnd = cc.compilationData.Max(x => x.StartTime);
+                    if (minStart < cc.CompilationStarted) cc.CompilationStarted = minStart;
+                    if (maxEnd > cc.CompilationFinished) cc.CompilationFinished = maxEnd;
+                }
+                
+                // var beeCompilationStarted = new DateTime((beeData.traceEvents.First().ts) * ticksPerMicrosecond);
+                // var beeCompilationFinished = new DateTime((beeData.traceEvents.Last().ts) * ticksPerMicrosecond);
                 // Debug.Log(beeCompilationStarted + " - " + cc.CompilationStarted + ", " + beeCompilationFinished + " - " + cc.CompilationFinished);
                 
                 // foreach (var asm in cc.compilationData)

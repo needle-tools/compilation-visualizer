@@ -348,9 +348,18 @@ namespace Needle.CompilationVisualizer
                 GUILayout.FlexibleSpace();
             }
             GUILayout.EndHorizontal();
-
-            if (!gotData || data.iterations.Count == 0) {
-                GUILayout.Label("Waiting for compilation data...", EditorStyles.miniLabel);
+            
+            if (!gotData || data.iterations.Count == 0)
+            {
+                try
+                {
+                    GUILayout.Label("Waiting for compilation data...", EditorStyles.miniLabel);
+                }
+                // Unity being weird
+                catch (ArgumentException)
+                {
+                    // ignore
+                }
                 return;
             }
 
@@ -590,9 +599,27 @@ namespace Needle.CompilationVisualizer
             };
                 
             // Debug.Log("Compiling Player Scripts for " + settings.group + "/" + settings.target);
-                
+
+            const string tempDir = "Temp/PlayerScriptCompilation/";
             EditorUtility.DisplayProgressBar("Compiling Player Scripts", "Build Target: " + settings.target + " (" + settings.group + ")", 0.1f);
-            var results = PlayerBuildInterface.CompilePlayerScripts(settings, "Temp/PlayerScriptCompilation/");
+
+            #if BEE_COMPILATION_PIPELINE
+            try
+            {
+                // TODO figure out the right way to clear the compilation cache
+                // if (Directory.Exists("Library/Bee")) Directory.Delete("Library/Bee");
+                // if (Directory.Exists("Library/PramData")) Directory.Delete("Library/PramData");
+                // if (Directory.Exists("Library/BuildPlayerData")) Directory.Delete("Library/BuildPlayerData");
+                if (Directory.Exists("Library/Bee/artifacts")) Directory.Delete("Library/Bee/artifacts");
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir);
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+            #endif
+            
+            var results = PlayerBuildInterface.CompilePlayerScripts(settings, tempDir);
             // Debug.Log(string.Join("\n", results.assemblies));
             EditorUtility.ClearProgressBar();
         }
