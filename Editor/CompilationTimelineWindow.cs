@@ -619,6 +619,7 @@ namespace Needle.CompilationVisualizer
             }
             #endif
             
+            // RequestScriptCompilationOptions.CleanBuildCache?
             var results = PlayerBuildInterface.CompilePlayerScripts(settings, tempDir);
             // Debug.Log(string.Join("\n", results.assemblies));
             EditorUtility.ClearProgressBar();

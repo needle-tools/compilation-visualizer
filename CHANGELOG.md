@@ -2,6 +2,12 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2021-07-26
+- added ability to compile player scripts and see results from that
+- fixed some timings issues with the way Unity reports compilation start/end
+- fixed compilation timeline continuing to wait for frames when compilation had errors
+- fixed Reload times that were incorrect in some cases
+
 ## [1.5.0] - 2021-06-29
 - added support for 2021.2.0b1+
 - fixed some potential nullrefs when previous compilation trace can't be found
