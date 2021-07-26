@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using Needle.EditorGUIUtility;
 using UnityEditor;
+using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
 using UnityEngine;
 using UnityEditorInternal;
@@ -225,16 +226,19 @@ namespace Needle.CompilationVisualizer
 
         [SerializeField]
         internal ColorMode colorMode = ColorMode.CompilationDuration;
+
+        [SerializeField]
+        internal BuildTarget buildTarget = BuildTarget.StandaloneWindows64;
         
         // private Vector2 normalizedTimeView = new Vector2(0, 1);
 
         // slot ID (height index) to current end time
-        private static readonly Dictionary<int, float> GraphSlots = new Dictionary<int, float>();
+        private static readonly Dictionary<int, float> graphSlots = new Dictionary<int, float>();
 
         private void Clear()
         {
             #if !BEE_COMPILATION_PIPELINE
-            CompilationAnalysis.CompilationData.Clear();
+            CompilationData.Clear();
             #endif
         }
         
@@ -248,12 +252,43 @@ namespace Needle.CompilationVisualizer
             
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             EditorGUI.BeginDisabledGroup(EditorApplication.isCompiling);
+            
             if (GUILayout.Button("Recompile", EditorStyles.toolbarButton))
             {
                 if(AllowRefresh)
                     Clear();
                 RecompileEverything();
                 // TODO recompile separate scripts or AsmDefs or packages by selection, by setting them dirty
+            }
+
+            // if (GUILayout.Button("Compile Player Scripts", EditorStyles.toolbarButton))
+            // {
+            //     
+            // }
+
+            var actionCompilePlayer = false;
+            if (DropDownToggle(ref actionCompilePlayer, new GUIContent("Compile Player Scripts"), "toolbarDropDownToggle", out var buttonRect))
+            {
+                if (!PlayerScriptsSettingsWindow.ShowAtPosition(buttonRect, this))
+                    return;
+                GUIUtility.ExitGUI();
+            }
+
+            if (actionCompilePlayer)
+            {
+                var settings = new ScriptCompilationSettings
+                {
+                    group = BuildPipeline.GetBuildTargetGroup(buildTarget),
+                    target = buildTarget,
+                    options = ScriptCompilationOptions.None
+                };
+                
+                // Debug.Log("Compiling Player Scripts for " + settings.group + "/" + settings.target);
+                
+                EditorUtility.DisplayProgressBar("Compiling Player Scripts", "Build Target: " + settings.target + " (" + settings.group + ")", 0.1f);
+                var results = PlayerBuildInterface.CompilePlayerScripts(settings, "Temp/PlayerScriptCompilation/");
+                // Debug.Log(string.Join("\n", results.assemblies));
+                EditorUtility.ClearProgressBar();
             }
             
             EditorGUI.EndDisabledGroup();
@@ -346,8 +381,8 @@ namespace Needle.CompilationVisualizer
             // viewRect.width *= normalizedTimeView.y;
             var totalWidth = viewRect.width;
 
-            if (compactDrawing && GraphSlots.Any()) {
-                viewRect.yMax = viewRect.yMin + k_LineHeight * (GraphSlots.Last().Key + 1);
+            if (compactDrawing && graphSlots.Any()) {
+                viewRect.yMax = viewRect.yMin + k_LineHeight * (graphSlots.Last().Key + 1);
             }
             else if (!compactDrawing && gotSelection) {
                 viewRect.yMax = viewRect.yMin + lastTotalHeight;
@@ -380,7 +415,7 @@ namespace Needle.CompilationVisualizer
             DrawVerticalLines(viewRect, (float) totalSeconds * 1000f);
             // GUI.DrawTexture(rect, Texture2D.whiteTexture);
 
-            GraphSlots.Clear();
+            graphSlots.Clear();
             entryRects.Clear();
 
             // naive first pass: paint colored textures
@@ -453,20 +488,20 @@ namespace Needle.CompilationVisualizer
                     }
 
                     // stacking: find free slots to place entries
-                    var freeSlots = GraphSlots.Where(slot => slot.Value + 0 < x).ToList();
+                    var freeSlots = graphSlots.Where(slot => slot.Value + 0 < x).ToList();
                     int freeSlot;
                     if (freeSlots.Any()) {
                         freeSlot = freeSlots.OrderByDescending(slot => x - slot.Value).First().Key;
                     }
                     else {
-                        if (GraphSlots.Any())
-                            freeSlot = GraphSlots.Last().Key + 1;
+                        if (graphSlots.Any())
+                            freeSlot = graphSlots.Last().Key + 1;
                         else
                             freeSlot = 0;
-                        GraphSlots.Add(freeSlot, x + w);
+                        graphSlots.Add(freeSlot, x + w);
                     }
 
-                    GraphSlots[freeSlot] = x + w;
+                    graphSlots[freeSlot] = x + w;
 
                     var localRect = new Rect(x, k_LineHeight * (compactDrawing ? freeSlot : nonSkippedIndex) + yMax, w,
                         entryHeight);
@@ -705,7 +740,7 @@ namespace Needle.CompilationVisualizer
                                         string.Join("\n- ",
                                             asm.compiledAssemblyReferences.Select(x =>
                                                 Path.GetFileName(x) + "   <color=#ffffff" + "55>" +
-                                                Path.GetDirectoryName(x).Replace(editorPath, "") + "</color>")
+                                                Path.GetDirectoryName(x)?.Replace(editorPath, "") + "</color>")
                                         );
                         // Workaround for console log length limitations
                         const int MaxLogLength = 15000;
@@ -828,6 +863,78 @@ namespace Needle.CompilationVisualizer
 #if !UNITY_2021_1_OR_NEWER // TODO need to figure out how to lock results on 2021+
             windowLockState.ShowButton(r, Styles.lockButton);
 #endif
+        }
+        
+        // from EditorGUILayout.DropDownToggle (internal)
+        internal static bool DropDownToggle(ref bool toggled, GUIContent content, GUIStyle toggleButtonStyle, out Rect buttonRect)
+        {
+            Rect rect = GUILayoutUtility.GetRect(content, toggleButtonStyle);
+            var flag = EditorGUI.DropdownButton(new Rect(rect.xMax - toggleButtonStyle.padding.right, rect.y, toggleButtonStyle.padding.right, rect.height), GUIContent.none, FocusType.Passive, GUIStyle.none);
+            if (!flag)
+                toggled = GUI.Toggle(rect, toggled, content, toggleButtonStyle);
+            buttonRect = rect;
+            return flag;
+        }
+
+        internal class PlayerScriptsSettingsWindow : EditorWindow
+        {
+            internal CompilationTimelineWindow parentWindow;
+            internal static PlayerScriptsSettingsWindow window;
+            
+            internal static bool ShowAtPosition(Rect buttonRect, CompilationTimelineWindow parentWindow)
+            {
+                Event.current.Use();
+                if (!window)
+                {
+                    window = CreateInstance<PlayerScriptsSettingsWindow>();
+                    window.Init(buttonRect, parentWindow);
+                    return true;
+                }
+                window.Cancel();
+                return false;
+            }
+
+            private GUIStyle background;
+            private void Init(Rect buttonRect, CompilationTimelineWindow parentWnd)
+            {
+                background = "grey_border";
+                buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
+                parentWindow = parentWnd;
+                var windowSize = new Vector2(250f, UnityEditor.EditorGUIUtility.singleLineHeight + 2 * 4);
+                ShowAsDropDown(buttonRect, windowSize);
+            }
+            
+            private void Cancel()
+            {
+                Close();
+                GUI.changed = true;
+                GUIUtility.ExitGUI();
+            }
+
+            private void OnGUI()
+            {
+                var wnd = new Rect(0, 0, position.width, position.height);
+
+                var innerWnd = wnd;
+                const int padding = 4;
+                innerWnd.xMin += padding;
+                innerWnd.xMax -= padding;
+                innerWnd.yMin += padding;
+                innerWnd.yMax -= padding;
+                
+                var width = UnityEditor.EditorGUIUtility.labelWidth; 
+                UnityEditor.EditorGUIUtility.labelWidth = 90;
+                parentWindow.buildTarget = (BuildTarget) EditorGUI.EnumPopup(innerWnd, "Build Target", parentWindow.buildTarget);
+                UnityEditor.EditorGUIUtility.labelWidth = width;
+                
+                if (Event.current.type == EventType.Repaint)
+                    background.Draw(wnd, GUIContent.none, false, false, false, false);
+                
+                if (Event.current.type != EventType.KeyDown || Event.current.keyCode != KeyCode.Escape)
+                    return;
+                
+                Cancel();
+            }
         }
     }
 }
