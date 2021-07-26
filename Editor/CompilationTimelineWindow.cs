@@ -275,6 +275,8 @@ namespace Needle.CompilationVisualizer
             if(gotData && data.iterations.Count > 0)
             {
                 totalSpan = data.iterations.Last().AfterAssemblyReload - data.iterations.First().CompilationStarted;
+                if (totalSpan.TotalSeconds < -10000)
+                    totalSpan = data.iterations.Last().CompilationFinished - data.iterations.First().CompilationStarted;
                 if (totalSpan.TotalSeconds < 0) // timespan adjusted during compilation
                     totalSpan = DateTime.Now - data.iterations.First().CompilationStarted;
                 
