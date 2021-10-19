@@ -32,8 +32,9 @@ You can open the **Compilation Visualizer** by selecting `Window > Analysis > Co
 
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/compact-view-recompile.gif)
 
+### Recompile
 If you want to trigger a recompile, you can either use the <kbd>Recompile</kbd> button, or `Right Click > Reimport` a script or folder with scripts to cause that to be recompiled.  
-You can also compile player scripts only, by clicking <kbd>Compile Player Scripts</kbd>.  
+You can also compile **player scripts only**, by clicking <kbd>Compile Player Scripts</kbd>.  
 
 ## Screenshots
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view-recompile.gif)
