@@ -1,6 +1,6 @@
 # Compilation Visualizer for Unity
 
-![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202020.2-brightgreen) [![openupm](https://img.shields.io/npm/v/com.needle.compilation-visualizer?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.needle.compilation-visualizer/)
+![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202021.2-brightgreen) [![openupm](https://img.shields.io/npm/v/com.needle.compilation-visualizer?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.needle.compilation-visualizer/)
 
 ## What's this?
 This tool visualizes the assembly compilation process in Unity3D. It hooks into the Editor-provided events and nicely draws them on a timeline. That's especially helpful when trying to optimize compile times and dependencies between assemblies.  
@@ -48,13 +48,10 @@ You can also compile **player scripts only**, by clicking <kbd>Compile Player Sc
 While most functionality works great those versions, some minor things are different:
 - slightly less accurate total compilation time on 2018.4 — 2019.1+ has events for the entire compilation while on 2018.4 the last finished assembly compilation is used as end date.
 - no PackageInfo for now on 2018.4/2019.1 as `PackageInfo.FindForAsset` doesn't exist.  
-_Future Work: there's ways to still find the right package._
 
 ## Known Issues
-On 2021.2, <kbd>Compile Player Scripts</kbd> sometimes returns empty/incorrect results. This seems to be caused by incremental compilation (e.g. the files are already compiled) and Unity doesn't have a method call to clean the build cache.  
-A workaround seems to be clicking <kbd>Recompile</kbd> and then afterwards <kbd>Compile Player Scripts</kbd>.    
 
-Also on 2021.2, sometimes `UnityEditor.UI.dll` and `UnityEditor.TestRunner.dll` are included in Player Builds for reasons.  
+On 2021.2, sometimes `UnityEditor.UI.dll` and `UnityEditor.TestRunner.dll` are included in Player Builds for reasons.  
 
 ## Contact
 <b>[needle — tools for unity](https://needle.tools)</b> • 

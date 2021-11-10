@@ -102,7 +102,7 @@ namespace Needle.CompilationVisualizer
         }
 
         private WindowStyles styles;
-        private WindowStyles Styles => styles ?? (styles = new WindowStyles());
+        private WindowStyles Styles => styles != null && styles.background ? styles : styles = new WindowStyles();
 
         class WindowStyles
         {

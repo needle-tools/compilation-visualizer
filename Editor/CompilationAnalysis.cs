@@ -126,13 +126,18 @@ namespace Needle.CompilationVisualizer
 
         private static void OnBeforeAssemblyReload()
         {
+            if(EditorApplication.isPlayingOrWillChangePlaymode) return;
+
             if(AllowLogging) Debug.Log("Before Assembly Reload at " + DateTime.Now);
             var data = CompilationData.Get();
             data.BeforeAssemblyReload = DateTime.Now;
             CompilationData.Write(data);
         }
 
-        private static void OnAfterAssemblyReload() {
+        private static void OnAfterAssemblyReload()
+        {
+            if(EditorApplication.isPlayingOrWillChangePlaymode) return;
+
             var data = CompilationData.Get();
             if (data == null) return;
             

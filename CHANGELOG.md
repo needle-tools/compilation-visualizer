@@ -2,6 +2,11 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2021-11-10
+- fixed null texture warning in some cases after domain reload
+- fixed pid filtering in 2021.2.0f1+ (change in release - no support for 2021.2 beta anymore)
+- fixed reload timings incorrectly being changed when reloading assemblies on entering playmode
+
 ## [1.6.0] - 2021-07-26
 - added ability to compile player scripts and see results from that
 - fixed some timings issues with the way Unity reports compilation start/end

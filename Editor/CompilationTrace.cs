@@ -40,7 +40,8 @@ namespace Needle.CompilationVisualizer
         }
         
         [InitializeOnLoadMethod]
-        static void InitCompilationEvents() {
+        static void InitCompilationEvents()
+        {
 #if UNITY_2019_1_OR_NEWER
             CompilationPipeline.compilationStarted += OnCompilationStarted;
             CompilationPipeline.compilationFinished += OnCompilationFinished;
@@ -51,19 +52,8 @@ namespace Needle.CompilationVisualizer
 
         private static void OnCompilationStarted(object obj) => instance.CompilationStarted = DateTime.Now;
         private static void OnCompilationFinished(object obj) => instance.CompilationFinished = DateTime.Now;
-        private static void OnBeforeAssemblyReload() => instance.BeforeAssemblyReload = DateTime.Now;
-        private static void OnAfterAssemblyReload() => instance.AfterAssemblyReload = DateTime.Now;
-        // {       
-            // Debug.Log("Reload time: " + (instance.AfterAssemblyReload - instance.BeforeAssemblyReload).TotalSeconds + ", " + "since last comp: " + (instance.BeforeAssemblyReload - instance.CompilationFinished).TotalSeconds);
-            // Debug.Log(nameof(OnAfterAssemblyReload) + " " + DateTime.Now);
-
-            // string Log(DateTime a, DateTime b) => (b - a).TotalSeconds + "s ";
-            //
-            // Debug.Log("from start to finish: " + Log(instance.CompilationStarted, instance.AfterAssemblyReload) +
-            //           "\ncompilation: " + Log(instance.CompilationStarted, instance.CompilationFinished) + 
-            //           "\nend of comp to begin reload: " + Log(instance.CompilationFinished, instance.BeforeAssemblyReload) + 
-            //           "\nreload: " + Log(instance.BeforeAssemblyReload, instance.AfterAssemblyReload));
-        // }
+        private static void OnBeforeAssemblyReload() { if(!EditorApplication.isPlayingOrWillChangePlaymode) instance.BeforeAssemblyReload = DateTime.Now; }
+        private static void OnAfterAssemblyReload() { if(!EditorApplication.isPlayingOrWillChangePlaymode) instance.AfterAssemblyReload = DateTime.Now; }
     }
     
     internal class CompilationData
@@ -171,7 +161,8 @@ namespace Needle.CompilationVisualizer
             }
             catch (Exception e)
             {
-                Debug.LogError("Couldn't fetch compilation data: Please report a bug to hi@needle.tools.\n" + e);
+                var newIssueUrl = "https://github.com/needle-tools/compilation-visualizer/issues/new";
+                Debug.LogError($"Couldn't fetch compilation data; the format has probably changed. Please report a bug at <a href=\"{newIssueUrl}\">{newIssueUrl}</a> and include the package + Unity version.\n" + e);
                 return null;
             }
         }
