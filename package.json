@@ -1,7 +1,7 @@
 {
     "name": "com.needle.compilation-visualizer",
     "displayName": "Compilation Visualizer",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "author": {
       "name": "Needle",
       "email": "hi@needle.tools",
