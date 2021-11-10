@@ -114,7 +114,7 @@ namespace Needle.CompilationVisualizer
                 beeData.traceEvents = beeData.traceEvents
                     .Where(x => x.ts > 0
                                 #if UNITY_2021_2_OR_NEWER
-                                && x.pid == "bee_backend"
+                                && x.pid != "0"
                                 #endif
                                 )
                     .OrderBy(x => x.ts)
