@@ -585,7 +585,9 @@ namespace Needle.CompilationVisualizer
             GUI.EndScrollView();
         }
 
+        #if UNITY_2019_1_OR_NEWER
         [Shortcut("needle-compilation-visualizer-" + nameof(CompilePlayerScripts))]
+        #endif
         void CompilePlayerScripts()
         {
             if(AllowRefresh)
@@ -925,7 +927,9 @@ namespace Needle.CompilationVisualizer
             private void Init(Rect buttonRect, CompilationTimelineWindow parentWnd)
             {
                 background = "grey_border";
+                #if UNITY_2019_1_OR_NEWER
                 buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
+                #endif
                 parentWindow = parentWnd;
                 var windowSize = new Vector2(320f, UnityEditor.EditorGUIUtility.singleLineHeight + 2 * 4);
                 ShowAsDropDown(buttonRect, windowSize);
