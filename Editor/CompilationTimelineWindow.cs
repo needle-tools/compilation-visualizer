@@ -248,7 +248,7 @@ namespace Needle.CompilationVisualizer
         private float accumulatedDrag = 0f;
         private void OnGUI()
         {
-            if (data?.iterations == null || !data.iterations.Any() || data.iterations.First().compilationData == null || data.iterations.First().compilationData.Any())
+            if (data?.iterations == null || !data.iterations.Any() || data.iterations.First().compilationData == null || !data.iterations.First().compilationData.Any())
                 data = CompilationData.GetAll();
             
             var gotData = data != null && data.iterations != null && data.iterations.Count > 0;
