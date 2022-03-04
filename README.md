@@ -1,6 +1,6 @@
 # Compilation Visualizer for Unity
 
-![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202021.2-brightgreen) [![openupm](https://img.shields.io/npm/v/com.needle.compilation-visualizer?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.needle.compilation-visualizer/)
+![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202022.1-brightgreen) [![openupm](https://img.shields.io/npm/v/com.needle.compilation-visualizer?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.needle.compilation-visualizer/)
 
 ## What's this?
 This tool visualizes the assembly compilation process in Unity3D. It hooks into the Editor-provided events and nicely draws them on a timeline. That's especially helpful when trying to optimize compile times and dependencies between assemblies.  
@@ -28,13 +28,26 @@ If you're on Unity 2019.4+:
 - paste `com.needle.compilation-visualizer`
 - click <kbd>Add</kbd>.
 
-You can open the **Compilation Visualizer** by selecting `Window > Analysis > Compilation Timeline`.
+You can open the **Compilation Visualizer** by selecting `Window > Analysis > Compilation Timeline`. It will automatically update whenever something is compiled.  
 
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/compact-view-recompile.gif)
 
 ### Recompile
 If you want to trigger a recompile, you can either use the <kbd>Recompile</kbd> button, or `Right Click > Reimport` a script or folder with scripts to cause that to be recompiled.  
 You can also compile **player scripts only**, by clicking <kbd>Compile Player Scripts</kbd>.  
+
+On 2021.2+, Unity changed how compilation results are cached. The <kbd>Recompile</kbd> and <kbd>Compile Player Scripts</kbd> will clear those caches to allow measuring a full compilation run.  
+
+### Navigation
+
+<kbd>Left Click</kbd> to select a specific assembly. This will show dependencies and dependants.  
+<kbd>Hover</kbd> over an assembly to get additional details.  
+<kbd>Alt + Scroll Wheel</kbd> to zoom in/out.  
+<kbd>Alt + Right Click</kbd> to reset zoom.  
+  
+<kbd>Compact</kbd> will toggle between a waterfall view of all assemblies, and a compact collapsed view that tries to save space.  
+<kbd>Logging</kbd> turns on a lot of extra logs that will be put into the Console when clicking on an assembly.  
+<kbd>Show Reloads</kbd> adds an extra section in the timeline to see how much time went into compilation and how much into the following Domain Reload.  
 
 ## Screenshots
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view-recompile.gif)
