@@ -2,6 +2,13 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2022-03-04
+- added ability to zoom
+  - use the range slider or <kbd>Alt + MouseWheel</kbd> to zoom
+  - <kbd>Alt + rightclick</kbd> resets zoom
+- fixed performance regression when using the Bee backend
+- fixed "Compile Player Scripts" on newer Bee versions (different cache structure)
+
 ## [1.7.0] - 2021-11-10
 - fixed null texture warning in some cases after domain reload
 - fixed pid filtering in 2021.2.0f1+ (change in release - no support for 2021.2 beta anymore)
