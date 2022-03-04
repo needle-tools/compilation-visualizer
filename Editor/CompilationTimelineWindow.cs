@@ -696,7 +696,7 @@ namespace Needle.CompilationVisualizer
                 // if (Directory.Exists("Library/Bee")) Directory.Delete("Library/Bee");
                 // if (Directory.Exists("Library/PramData")) Directory.Delete("Library/PramData");
                 // if (Directory.Exists("Library/BuildPlayerData")) Directory.Delete("Library/BuildPlayerData");
-                if (Directory.Exists("Library/Bee/artifacts")) Directory.Delete("Library/Bee/artifacts");
+                if (Directory.Exists("Library/Bee/artifacts")) Directory.Delete("Library/Bee/artifacts", true);
                 if (Directory.Exists(tempDir)) Directory.Delete(tempDir);
             }
             catch (Exception)
