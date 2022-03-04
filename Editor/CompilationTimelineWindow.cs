@@ -243,7 +243,9 @@ namespace Needle.CompilationVisualizer
             data = CompilationData.GetAll();
             // #endif
         }
-        
+
+        public float fromTimeValue = 0f, toTimeValue = 1f;
+        private float accumulatedDrag = 0f;
         private void OnGUI()
         {
             if (data?.iterations == null || !data.iterations.Any() || data.iterations.First().compilationData == null || data.iterations.First().compilationData.Any())
@@ -363,7 +365,6 @@ namespace Needle.CompilationVisualizer
                 return;
             }
 
-            
             var yMax = GUILayoutUtility.GetLastRect().yMax;
 
             // start of draw area rect
@@ -373,10 +374,9 @@ namespace Needle.CompilationVisualizer
             var totalSeconds = ShowAssemblyReloads ? totalSpan.TotalSeconds : totalCompilationSpan.TotalSeconds;
 
             var viewRect = rect;
+            
             viewRect.yMax = viewRect.yMin + k_LineHeight * totalCompiledAssemblyCount;
-            // totalWidth -= 15; // scrollbar
             viewRect.width -= 15;
-            // viewRect.width *= normalizedTimeView.y;
             var totalWidth = viewRect.width;
 
             if (compactDrawing && graphSlots.Any()) {
@@ -386,6 +386,14 @@ namespace Needle.CompilationVisualizer
                 viewRect.yMax = viewRect.yMin + lastTotalHeight;
             }
 
+            var paintRect = viewRect;
+            var fromWidth = viewRect.width * fromTimeValue;
+            var toWidth = viewRect.width * toTimeValue;
+
+            paintRect.xMin = Remap(fromWidth, toWidth, 0, viewRect.width, 0);
+            paintRect.xMax = Remap(fromWidth, toWidth, 0, viewRect.width, viewRect.width);
+            
+            var isZoomed = !(Mathf.Approximately(fromTimeValue, 0) && Mathf.Approximately(toTimeValue, 1));
             if (Event.current.type == EventType.Repaint) {
                 // draw time header
                 var backgroundRect = rect;
@@ -395,11 +403,39 @@ namespace Needle.CompilationVisualizer
                 backgroundRect.width += 200;
                 #endif
                 GUI.DrawTexture(backgroundRect, Styles.background);
+
+                var timeHeader0 = GUI.color;
+                var timeHeader1 = GUI.color;
+                timeHeader1.a = 0.65f;
+                GUI.color = timeHeader1;
+                // actual time
                 DrawTimeHeader(viewRect, scrollPosition, (float) totalSeconds * 1000f);
+                
+                timeHeader1.a = 1f;
+                GUI.color = timeHeader1;
+                // zoomed time
+                var scaledTimeHeader = paintRect;
+                scaledTimeHeader.yMin += 40;
+                DrawTimeHeader(scaledTimeHeader, scrollPosition, (float) totalSeconds * 1000f);
+
+                GUI.color = timeHeader0;
             }
 
-            rect.yMin += 20;
+            var sliderRect = viewRect;
+            sliderRect.width += 15;
+            sliderRect.yMin += 20;
+            sliderRect.height = 20;
+            
+            var c0 = GUI.color;
+            var c1 = GUI.color;
+            c1.a = 0.3f;
+            GUI.color = c1;
+            EditorGUI.MinMaxSlider(sliderRect, ref fromTimeValue, ref toTimeValue, 0f, 1f);
+            GUI.color = c0;
+            
+            rect.yMin += 60;
             viewRect.height = Mathf.Max(viewRect.height + k_LineHeight, rect.height); // one extra line for reload indicator
+            paintRect.height = viewRect.height;
             
             if (gotSelection) {
                 selectedScrollPosition = GUI.BeginScrollView(rect, selectedScrollPosition, viewRect);
@@ -410,12 +446,59 @@ namespace Needle.CompilationVisualizer
                 selectedScrollPosition.x = scrollPosition.x; // sync X scroll
             }
 
-            DrawVerticalLines(viewRect, (float) totalSeconds * 1000f);
+            DrawVerticalLines(paintRect, (float) totalSeconds * 1000f);
             // GUI.DrawTexture(rect, Texture2D.whiteTexture);
 
             graphSlots.Clear();
             entryRects.Clear();
 
+            if (Event.current.type == EventType.MouseDown)
+            {
+                accumulatedDrag = 0;
+            }
+            
+            if (Event.current.type == EventType.MouseUp)
+            {
+                if (accumulatedDrag > 0)
+                    Event.current.Use();
+            }
+            
+            // alt + right click resets the view immediately
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 1)
+            {
+                Event.current.Use();
+
+                if(Event.current.alt)
+                {
+                    fromTimeValue = 0;
+                    toTimeValue = 1;
+                    Repaint();
+                }
+            }
+            
+            // need to do this before the entries, otherwise the entry buttons catch drag events.
+            if (Event.current.type == EventType.MouseDrag)
+            {
+                var pixelShift = Event.current.delta.x;
+                var totalScaledPixelWidth = Remap(fromTimeValue * Screen.width, toTimeValue * Screen.width, 0, Screen.width, Screen.width);
+                var percentageShift = pixelShift / totalScaledPixelWidth * 0.5f;
+                
+                // clamp shift
+                if(fromTimeValue - percentageShift >= 0 && fromTimeValue - percentageShift <= 1 && toTimeValue - percentageShift >= 0 && toTimeValue - percentageShift <= 1)
+                {
+                    fromTimeValue -= percentageShift;
+                    toTimeValue -= percentageShift;
+                }
+
+                var verticalShift = Event.current.delta.y;
+                selectedScrollPosition.y -= verticalShift;
+                scrollPosition.y -= verticalShift;
+
+                accumulatedDrag += Event.current.delta.sqrMagnitude;
+                
+                Repaint();
+            }
+            
             // naive first pass: paint colored textures
             int nonSkippedIndex = 0;
             float currentHeight = yMax;
@@ -501,6 +584,11 @@ namespace Needle.CompilationVisualizer
 
                     graphSlots[freeSlot] = x + w;
 
+                    // remap x and w
+                    var xEnd = x + w;
+                    x = Remap(fromWidth, toWidth, 0, viewRect.width, x);
+                    w = Remap(fromWidth, toWidth, 0, viewRect.width, xEnd) - x;
+                    
                     var localRect = new Rect(x, k_LineHeight * (compactDrawing ? freeSlot : nonSkippedIndex) + yMax, w,
                         entryHeight);
                     if (gotSelection) {
@@ -528,6 +616,12 @@ namespace Needle.CompilationVisualizer
                 var wSpan2 = lastSectionEndTime - iterationData.CompilationFinished;
                 var x2 = (float) (xSpan2.TotalSeconds / totalSeconds) * totalWidth;
                 var w2 = (float) (wSpan2.TotalSeconds / totalSeconds) * totalWidth;
+                
+                // remap x and w
+                var xEnd2 = x2 + w2;
+                x2 = Remap(fromWidth, toWidth, 0, viewRect.width, x2);
+                w2 = Remap(fromWidth, toWidth, 0, viewRect.width, xEnd2) - x2;
+                
                 DrawReloadIndicator(viewRect, ShowAssemblyReloads, x2, w2, Mathf.Max(0, (float) (iterationData.AfterAssemblyReload - iterationData.CompilationFinished).TotalSeconds));
             }
             lastTotalHeight = currentHeight;
@@ -547,42 +641,32 @@ namespace Needle.CompilationVisualizer
                 Repaint();
             }
 
-            if (Event.current.type == EventType.ScrollWheel) {
-                /*
-                
-                // TODO: implement zooming into view to make names better readable
-                // check if scrollbar is visible (then we need to catch Y scroll and only process here with a modifier pressed)
-                
+            if (Event.current.type == EventType.ScrollWheel && Event.current.alt)
+            {
                 // we want to zoom around the current X position:
                 var mPosX = Event.current.mousePosition.x;
                 var scrollDelta = Event.current.delta.y;
-                var lerp = 1 - mPosX / totalWidth;
-    
-                var cursorBeforeScroll = mPosX + scrollPosition.x;
+                var scrollAmount = 1f + scrollDelta / 25f;
+                var percentageOnPage = Mathf.InverseLerp(0, Screen.width, mPosX);
+                var valueOnPage = Remap(0, 1, fromTimeValue, toTimeValue, percentageOnPage);
                 
-                // Debug.Log("Scroll delta: " + Event.current.delta + ", X: " + (mPosX + scrollPosition.x) / totalWidth);
-    
-                // normalizedTimeView.x = (1 + scrollDelta * 0.01f * lerp) * normalizedTimeView.x;
-                // normalizedTimeView.y = (1 - scrollDelta * 0.01f * lerp) * normalizedTimeView.y;
-                normalizedTimeView.y = (1 - scrollDelta * 0.01f) * normalizedTimeView.y;
-    
-                var cursorAfterScroll = mPosX + scrollPosition.x;// position.width * normalizedTimeView.y;
-    
-                scrollPosition.x += cursorAfterScroll - cursorBeforeScroll;
+                // scale current from and to values around that valueOnPage
+                fromTimeValue = valueOnPage - (valueOnPage - fromTimeValue) * scrollAmount;
+                toTimeValue = valueOnPage + (toTimeValue - valueOnPage) * scrollAmount;
+                fromTimeValue = Mathf.Clamp01(fromTimeValue);
+                toTimeValue = Mathf.Clamp01(toTimeValue);
                 
-                // mouse cursor relative pos should stay invariant
-                // so we need to solve:
-                // scrollPosition.x + mousePosition.x = f(scrollPosition.x + mousePosition.x)
-                // scrollPosition.x = f(scrollPosition.x + mousePosition.x) - mousePosition.x
-                // 
-                // scrollPosition.x -= (scrollDelta * 0.01f * (1 - lerp)) * viewRect.width;
+                Event.current.Use();
                 
                 Repaint();
-                
-                */
             }
 
             GUI.EndScrollView();
+        }
+
+        private static float Remap(float srcFrom, float srcTo, float dstFrom, float dstTo, float val)
+        {
+            return (val - srcFrom) / (srcTo - srcFrom) * (dstTo - dstFrom) + dstFrom;
         }
 
         #if UNITY_2019_1_OR_NEWER
@@ -655,18 +739,23 @@ namespace Needle.CompilationVisualizer
         
         void DrawTimeHeader(Rect viewRect, Vector2 scroll, float totalMilliseconds) {
             var totalSeconds = totalMilliseconds / 1000f;
-
+            var amount = totalSeconds * 1000f / viewRect.width;
+            
             var multiplier = 1f;
 
-            if (totalSeconds < 1.5f)
-                multiplier = 50f;
-            if (totalSeconds < 5)
+            if (amount < 5)
+                multiplier = 4f;
+            if (amount < 2f)
                 multiplier = 10f;
-            if (totalSeconds > 50)
+            if (amount < 0.5f)
+                multiplier = 25f;
+            if (amount > 50)
                 multiplier = 0.5f;
-            if (totalSeconds > 100)
+            if (amount > 100)
                 multiplier = 0.2f;
-
+            if (amount > 500)
+                multiplier = 0.05f;
+            
             var linesPerSecond = 1f * multiplier;
             var lineCount = (int) (totalSeconds * linesPerSecond) + 2;
             var lineDistance = viewRect.width / (totalSeconds * linesPerSecond);
@@ -700,12 +789,15 @@ namespace Needle.CompilationVisualizer
             var lineCount = (int) (totalSeconds * linesPerSecond) + 2;
             var lineDistance = viewRect.width / (totalSeconds * linesPerSecond);
 
-            GUI.color = styles.verticalLineColor;
+            var c0 = GUI.color;
+            var c = styles.verticalLineColor;
+            c.a *= GUI.color.a;
+            GUI.color = c;
             for (int i = 0; i < lineCount; i++) {
                 GUI.DrawTexture(new Rect(i * lineDistance + viewRect.xMin, viewRect.yMin, 1, viewRect.height), Texture2D.whiteTexture);
             }
 
-            GUI.color = Color.white;
+            GUI.color = c0;
         }
 
         Color ColorFromValue(float value, float min = 0.5f, float max = 5f, float hueRange = 0.25f) {

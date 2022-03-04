@@ -25,7 +25,7 @@ namespace Needle.CompilationVisualizer
             set => EditorPrefs.SetBool(AllowLoggingPrefsKey, value);
         }
         public static bool ShowAssemblyReloads {
-            get => EditorPrefs.HasKey(ShowAssemblyReloadsPrefsKey) ? EditorPrefs.GetBool(ShowAssemblyReloadsPrefsKey) : true;
+            get => EditorPrefs.HasKey(ShowAssemblyReloadsPrefsKey) ? EditorPrefs.GetBool(ShowAssemblyReloadsPrefsKey) : false;
             set => EditorPrefs.SetBool(ShowAssemblyReloadsPrefsKey, value);
         }
 
