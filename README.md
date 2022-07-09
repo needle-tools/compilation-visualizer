@@ -15,7 +15,7 @@ Compilation Visualizer is available on OpenUPM: https://openupm.com/packages/com
 
 If you're on Unity 2019.4+:
 - open `Edit/Project Settings/Package Manager`
-- add a new Scoped Registry:
+- add a new Scoped Registry or add the package to the existing OpenUPM scope:
   ```
   Name: OpenUPM
   URL:  https://package.openupm.com/
@@ -34,7 +34,8 @@ You can open the **Compilation Visualizer** by selecting `Window > Analysis > Co
 
 ### Recompile
 If you want to trigger a recompile, you can either use the <kbd>Recompile</kbd> button, or `Right Click > Reimport` a script or folder with scripts to cause that to be recompiled.  
-You can also compile **player scripts only**, by clicking <kbd>Compile Player Scripts</kbd>.  
+
+You can also compile **player scripts only**, by clicking <kbd>Compile Player Scripts</kbd>. Use the dropdown button to switch to another platform.  
 
 On 2021.2+, Unity changed how compilation results are cached. The <kbd>Recompile</kbd> and <kbd>Compile Player Scripts</kbd> will clear those caches to allow measuring a full compilation run.  
 
@@ -48,6 +49,20 @@ On 2021.2+, Unity changed how compilation results are cached. The <kbd>Recompile
 <kbd>Compact</kbd> will toggle between a waterfall view of all assemblies, and a compact collapsed view that tries to save space.  
 <kbd>Logging</kbd> turns on a lot of extra logs that will be put into the Console when clicking on an assembly.  
 <kbd>Show Reloads</kbd> adds an extra section in the timeline to see how much time went into compilation and how much into the following Domain Reload.  
+
+### EditMode tests
+
+Compilation Visualizer can run edit mode tests to ensure your project compiles on all platforms, catching common mistakes with ifdefs and API compatibility.  
+To use these tests, simply add it to the "testables" section in your project manifest.json:  
+```
+  "testables": [
+    "com.needle.compilation-visualizer"
+  ],
+```
+
+Then, when you open `Window > General > Test Runner` you can click <kbd>Run All</kbd> or double-click `CompilePlayerScripts`.  
+
+![EditMode Tests](https://github.com/needle-tools/compilation-visualizer/wiki/images/editmode-tests.png)
 
 ## Screenshots
 ![Compilation Process](https://github.com/needle-tools/compilation-visualizer/wiki/images/expanded-view-recompile.gif)

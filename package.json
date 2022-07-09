@@ -1,7 +1,7 @@
 {
     "name": "com.needle.compilation-visualizer",
     "displayName": "Compilation Visualizer",
-    "version": "1.8.1",
+    "version": "1.8.2",
     "author": {
       "name": "Needle",
       "email": "hi@needle.tools",
@@ -17,7 +17,8 @@
       "compilation",
       "visualization",
       "editor",
-      "debugging"
+      "debugging", 
+      "tests"
     ],
     "type": "tool",
     "dependencies": {},
