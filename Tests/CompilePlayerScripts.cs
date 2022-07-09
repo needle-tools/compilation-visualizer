@@ -6,6 +6,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Player;
+using UnityEditor.Compilation;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -43,6 +44,7 @@ namespace Needle.CompilationVisualizer
             return attributes.Length > 0 ? (T) attributes[0] : null;
         }
         
+#if UNITY_2020_2_OR_NEWER
         /*
          * https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-options/language#langversion
          * 2022.2: 
@@ -80,9 +82,8 @@ namespace Needle.CompilationVisualizer
         {
             var buildTarget = BuildTarget.StandaloneWindows64;
             var group = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            var namedGroup = NamedBuildTarget.FromBuildTargetGroup(group);
             
-            var additionalCompilerArgumentsForGroup = PlayerSettings.GetAdditionalCompilerArguments(namedGroup);
+            var additionalCompilerArgumentsForGroup = PlayerSettings.GetAdditionalCompilerArgumentsForGroup(group);
             const string key = nameof(CompilationVisualizer) + "_" + nameof(LanguageFeatureSupport) + "_" + nameof(additionalCompilerArgumentsForGroup);
             const string targetKey = nameof(CompilationVisualizer) + "_" + nameof(LanguageFeatureSupport) + "_" + nameof(buildTarget);
             
@@ -91,19 +92,19 @@ namespace Needle.CompilationVisualizer
             
             var argList = additionalCompilerArgumentsForGroup.ToList();
             argList.Add(feature.featureArg);
-            PlayerSettings.SetAdditionalCompilerArguments(namedGroup, argList.ToArray());
+            PlayerSettings.SetAdditionalCompilerArgumentsForGroup(group, argList.ToArray());
             yield return new WaitForDomainReload();
 
             // restore variables - they're reset after Domain Reload
             buildTarget = (BuildTarget)Enum.Parse(typeof(BuildTarget), SessionState.GetString(targetKey, BuildTarget.StandaloneWindows64.ToString()));
             group = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            namedGroup = NamedBuildTarget.FromBuildTargetGroup(group);
 
             var oldArgsList = SessionState.GetString(key, "");
             var oldArgs = oldArgsList.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            PlayerSettings.SetAdditionalCompilerArguments(namedGroup, oldArgs);
+            PlayerSettings.SetAdditionalCompilerArgumentsForGroup(group, oldArgs);
             yield return new WaitForDomainReload();
         }
+#endif
     }
     
     /// <summary>
