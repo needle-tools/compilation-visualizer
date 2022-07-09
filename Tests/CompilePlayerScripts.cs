@@ -1,10 +1,13 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Player;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Needle.CompilationVisualizer
 {
@@ -38,6 +41,68 @@ namespace Needle.CompilationVisualizer
             var memInfo = enumVal.GetType().GetMember(enumVal.ToString());
             var attributes = memInfo[0].GetCustomAttributes(typeof(T), false);
             return attributes.Length > 0 ? (T) attributes[0] : null;
+        }
+        
+        /*
+         * https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-options/language#langversion
+         * 2022.2: 
+         * 2022.1: 
+         * 2021.3: 
+         * 2021.2: 	C# 9.0
+         * 2021.1: 
+         * 2020.3: 
+         * 2020.2: .NET 4.6: C# 8
+         * 2020.1: 
+         * 2019.4: 
+         * 2019.3: 
+         * 2019.2: 
+         * 2019.1: 
+         * 2018.4: .NET 3.5: C# 4, .NET 4.6: C# 7.3
+         */
+
+        public class FeatureData
+        {
+            public string featureArg;
+            public string unityHint;
+            public override string ToString() => $"C# {featureArg}, used in {unityHint}";
+        }
+        
+        private static IEnumerable<FeatureData> GetFeatures()
+        {
+            yield return new FeatureData() { featureArg = "-langversion:\"4\"", unityHint = "2018.4 — 2020.1, .NET 3.5" };
+            yield return new FeatureData() { featureArg = "-langversion:\"7.3\"", unityHint = "2018.4 — 2020.1, .NET 4.6" };
+            yield return new FeatureData() { featureArg = "-langversion:\"8\"", unityHint = "2020.2 — 2021.1" };
+            yield return new FeatureData() { featureArg = "-langversion:\"9\"", unityHint = "2021.2+" };
+        }
+        
+        [UnityTest] [Explicit]
+        public IEnumerator LanguageFeatureSupport([ValueSource(nameof(GetFeatures))] FeatureData feature)
+        {
+            var buildTarget = BuildTarget.StandaloneWindows64;
+            var group = BuildPipeline.GetBuildTargetGroup(buildTarget);
+            var namedGroup = NamedBuildTarget.FromBuildTargetGroup(group);
+            
+            var additionalCompilerArgumentsForGroup = PlayerSettings.GetAdditionalCompilerArguments(namedGroup);
+            const string key = nameof(CompilationVisualizer) + "_" + nameof(LanguageFeatureSupport) + "_" + nameof(additionalCompilerArgumentsForGroup);
+            const string targetKey = nameof(CompilationVisualizer) + "_" + nameof(LanguageFeatureSupport) + "_" + nameof(buildTarget);
+            
+            SessionState.SetString(key, string.Join(",", additionalCompilerArgumentsForGroup) );
+            SessionState.SetString(targetKey, buildTarget.ToString());
+            
+            var argList = additionalCompilerArgumentsForGroup.ToList();
+            argList.Add(feature.featureArg);
+            PlayerSettings.SetAdditionalCompilerArguments(namedGroup, argList.ToArray());
+            yield return new WaitForDomainReload();
+
+            // restore variables - they're reset after Domain Reload
+            buildTarget = (BuildTarget)Enum.Parse(typeof(BuildTarget), SessionState.GetString(targetKey, BuildTarget.StandaloneWindows64.ToString()));
+            group = BuildPipeline.GetBuildTargetGroup(buildTarget);
+            namedGroup = NamedBuildTarget.FromBuildTargetGroup(group);
+
+            var oldArgsList = SessionState.GetString(key, "");
+            var oldArgs = oldArgsList.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            PlayerSettings.SetAdditionalCompilerArguments(namedGroup, oldArgs);
+            yield return new WaitForDomainReload();
         }
     }
     
