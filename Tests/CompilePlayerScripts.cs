@@ -77,6 +77,7 @@ namespace Needle.CompilationVisualizer
             yield return new FeatureData() { featureArg = "-langversion:\"9\"", unityHint = "2021.2+" };
         }
         
+#pragma warning disable 618
         [UnityTest] [Explicit]
         public IEnumerator LanguageFeatureSupport([ValueSource(nameof(GetFeatures))] FeatureData feature)
         {
@@ -100,10 +101,11 @@ namespace Needle.CompilationVisualizer
             group = BuildPipeline.GetBuildTargetGroup(buildTarget);
 
             var oldArgsList = SessionState.GetString(key, "");
-            var oldArgs = oldArgsList.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            var oldArgs = oldArgsList.Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries);
             PlayerSettings.SetAdditionalCompilerArgumentsForGroup(group, oldArgs);
             yield return new WaitForDomainReload();
         }
+#pragma warning restore
 #endif
     }
     
