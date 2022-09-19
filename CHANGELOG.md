@@ -2,6 +2,10 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.8.3] - 2022-09-20
+- fixed compile errors on <2020.2 and 2022.2+
+- added explicit C# language feature tests (experimental)
+
 ## [1.8.2] - 2022-07-09
 - added Unit Test explanation and howto to the Readme
 
