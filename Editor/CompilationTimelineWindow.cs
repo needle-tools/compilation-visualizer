@@ -286,6 +286,17 @@ namespace Needle.CompilationVisualizer
             compactDrawing = GUILayout.Toggle(compactDrawing, "Compact", EditorStyles.toolbarButton);
             AllowLogging = GUILayout.Toggle(AllowLogging, new GUIContent("Logging", "Log additional compilation data to the console on compilation"), EditorStyles.toolbarButton);
             ShowAssemblyReloads = GUILayout.Toggle(ShowAssemblyReloads, new GUIContent("Show Reloads", "Show or hide assembly reloads in the timeline."), EditorStyles.toolbarButton);
+            if (GUILayout.Button(new GUIContent(UnityEditor.EditorGUIUtility.FindTexture("SaveAs"), "Save current data to a JSON file"), EditorStyles.toolbarButton)) CompilationData.SaveToFile();
+            if (GUILayout.Button(new GUIContent(UnityEditor.EditorGUIUtility.FindTexture("Profiler.Open"), "Load data from a JSON file"), EditorStyles.toolbarButton))
+            {
+                CompilationData.LoadFromFile();
+                Clear();
+            }
+            if (GUILayout.Button(new GUIContent("Clear", "Clear the captured data"), EditorStyles.toolbarButton))
+            {
+                CompilationData.ResetData();
+                Clear();
+            }
             colorMode = (ColorMode) EditorGUILayout.EnumPopup(colorMode, GUILayout.ExpandWidth(false));
             
             var totalSpan = TimeSpan.Zero;
