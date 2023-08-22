@@ -2,6 +2,10 @@
 All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.8.4] - 2023-08-22
+- catch IOException and log a better message for it
+- ensure compatibility with 2023.1
+
 ## [1.8.3] - 2022-09-20
 - fixed compile errors on <2020.2 and 2022.2+
 - added explicit C# language feature tests (experimental)
