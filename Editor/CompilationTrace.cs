@@ -141,7 +141,7 @@ namespace Needle.CompilationVisualizer
                 };
 
                 // fix up incorrect reported compilation times
-                if(cc.compilationData != null && cc.compilationData.Any())
+                if (cc.compilationData != null && cc.compilationData.Any())
                 {
                     // fix reported start/end times for compilation
                     var minStart = cc.compilationData.Min(x => x.StartTime);
@@ -159,13 +159,20 @@ namespace Needle.CompilationVisualizer
 
                 return cc;
             }
+            catch (IOException e)
+            {
+                Debug.LogWarning($"IOException when trying to fetch compilation data: {e}. Please try again. If the issue persists: {bugReportString}");
+                return null;
+            }
             catch (Exception e)
             {
-                var newIssueUrl = "https://github.com/needle-tools/compilation-visualizer/issues/new";
-                Debug.LogError($"Couldn't fetch compilation data; the format has probably changed. Please report a bug at <a href=\"{newIssueUrl}\">{newIssueUrl}</a> and include the package + Unity version.\n" + e);
+                Debug.LogError($"Couldn't fetch compilation data; the format has probably changed. {bugReportString}\n{e}");
                 return null;
             }
         }
+
+        private static readonly string bugReportString = $"Please report a bug at <a href=\"{newIssueUrl}\">{newIssueUrl}</a> and include the package + Unity version.";
+        const string newIssueUrl = "https://github.com/needle-tools/compilation-visualizer/issues/new";
 
         public static void Clear()
         {
