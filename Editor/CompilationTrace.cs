@@ -90,10 +90,36 @@ namespace Needle.CompilationVisualizer
         const string ProfilerJson = "Library/Bee/profiler.json";
 #endif
         
+        private static bool IsFileLocked(string filename)
+        {
+            FileInfo file = new FileInfo(filename);
+            FileStream stream = null;
+
+            try
+            {
+                stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+            }
+            catch (IOException)
+            {
+                //the file is unavailable because it is:
+                //still being written to
+                //or being processed by another thread
+                //or does not exist (has already been processed)
+                return true;
+            }
+            finally
+            {
+                stream?.Close();
+            }
+
+            //file is not locked
+            return false;
+        }
+        
         private static CompilationData ConvertBeeDataToCompilationData()
         {
             if (!File.Exists(ProfilerJson)) return null;
-            
+            if (IsFileLocked(ProfilerJson)) return null;
             try
             {
                 var beeData =
