@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Needle.EditorGUIUtility;
+using Needle.Editors;
 using UnityEditor;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
@@ -349,6 +350,8 @@ namespace Needle.CompilationVisualizer
                     GUILayout.Label("Iterations: " + data.iterations.Count);
                 GUILayout.FlexibleSpace();
             }
+
+            Assets.DrawGUILogo();
             GUILayout.EndHorizontal();
             
             if (!gotData || data.iterations.Count == 0)
