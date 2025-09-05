@@ -1,0 +1,111 @@
+# for more stuff, see https://github.com/github/gitignore/blob/master/Unity.gitignore
+
+# Jetbrain Rider Cache
+.idea/
+*/Plugins/Editor/JetBrains*
+
+# Project specific
+# add all your development/MyUnityProject folders here!
+
+# Unity specific
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+.vs/
+.gradle/
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+crashlytics-build.properties
+ProBuilderSettings.json
+
+# vvvv specific
+# Dynamic Plugins
+bin/Dynamic/
+*._dynamic_.*
+*~.xml
+
+# OS junk files
+[Dd]esktop.ini
+[Dd]esktop.ini.meta
+[Tt]humbs.db
+[Tt]humbs.db.meta
+ehthumbs.db
+*.BridgeSort
+.DS_Store*
+.Spotlight-V100
+.Trashes
+
+# Visual Studio files
+ExportedObj/
+.consulo/
+*.unityproj
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.aps
+*.pch
+*.vspscc
+*.vssscc
+*_i.c
+*_p.c
+*.ncb
+*.suo
+*.tlb
+*.tlh
+*.bak
+*.[Cc]ache
+*.ilk
+*.log
+*.lib
+*.sbr
+*.sdf
+*.opensdf
+ipch/
+[Bb]in
+[Rr]elease*/
+[Dd]ynamic*/
+Ankh.NoLoad
+
+#Subversion files
+.svn
+ 
+# Office Temp Files
+~$*
+development/ARDesktop_2019.3/Assets/Example Apartment/Assets
+development/ARDesktop_2019.3/Assets/Example Apartment/ARscene
+development/ARDesktop_2019.3/Assets/Example Apartment/Scenes/Flur
+development/ARDesktop_2019.3/Assets/Example Apartment/Scenes/Kueche
+development/ARDesktop_2019.3/Assets/Example Apartment/Scenes/Wohnzimmer
+development/ARDesktop_NewInputSystem/Assets/Samples/pfc ARDesktop XR Plugin
+development/ARDesktop_NewInputSystem/Assets/Samples/pfc ARDesktop XR Plugin.meta
+development/ARSimulation_2020.1_NewInputSystem/Assets/Samples/AR Simulation/0.0.4-preview/Example Apartment
+development/ARSimulation_2019.3_DeviceSim/*.csproj
+development/ARSimulation_2019.3_NewInputSystem/*.csproj
+development/ARSimulation_*/*.csproj
+development/ARSimulation_*/.vscode/*
+development/ARSimulation_*/ARSimulation_*.sln
+development/*/Assets/Samples/AR Simulation
+development/*/Assets/Samples/AR Simulation.meta
+development/*/Assets/Samples.meta
+development/*/Assets/StreamingAssets/Hidden*.meta
+development/*/Assets/StreamingAssets.meta
+development/AssetStore_Release/*.csproj
+development/AssetStore_Release/*.sln
+development/AssetStore_InstallTo/*.csproj
+development/AssetStore_InstallTo/*.sln
+development/ARSimulation_2020.1_URP/Assets/BuildReports
+development/ARSimulation_2020.1_URP/Assets/BuildReports.meta
