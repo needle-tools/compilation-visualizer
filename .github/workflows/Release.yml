@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 5
     defaults:
       run:
-        working-directory: package
+        working-directory: 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
