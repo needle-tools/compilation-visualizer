@@ -1,6 +1,6 @@
 # for more stuff, see https://github.com/github/gitignore/blob/master/Unity.gitignore
 
-# Jetbrain Rider Cache
+# Jetbrains Rider Cache
 .idea/
 */Plugins/Editor/JetBrains*
 
