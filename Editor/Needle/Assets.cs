@@ -85,19 +85,15 @@ namespace Needle.Editors
 			var logo = UnityEditor.EditorGUIUtility.isProSkin ? FullLogoDarkMode : FullLogo;
 			if (logo)
 			{
-//				EditorGUILayout.BeginHorizontal();
-//				GUILayout.FlexibleSpace();
 				var rect = GUILayoutUtility.GetRect(maxHeight*2f + 10, maxHeight);
 				rect.width = maxHeight * 2f;
 				rect.height = maxHeight;
-				if (Event.current.type == EventType.Repaint)
-					GUI.DrawTexture(rect, logo, ScaleMode.ScaleToFit);
+				GUI.DrawTexture(rect, logo, ScaleMode.ScaleToFit);
 				GUI.Label(rect, new GUIContent(string.Empty, "Compilation Visualizer by\nneedle.tools"), GUIStyle.none);
 
 				UnityEditor.EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 				if (Event.current.type == EventType.MouseUp && rect.Contains(Event.current.mousePosition))
 					Application.OpenURL("https://needle.tools");
-			//	EditorGUILayout.EndHorizontal();
 			}
 		}
 		
@@ -108,20 +104,16 @@ namespace Needle.Editors
 			var logo = Assets.Logo;
 			if (logo)
 			{
-				//EditorGUILayout.BeginHorizontal();
-//				GUILayout.FlexibleSpace();
 				var rect = GUILayoutUtility.GetRect(maxHeight+5, maxHeight);
 				rect.height = maxHeight;
 				rect.y += 2f;
 				rect.width = maxHeight;
-				if (Event.current.type == EventType.Repaint)
-					GUI.DrawTexture(rect, logo, ScaleMode.ScaleToFit);
+				GUI.DrawTexture(rect, logo, ScaleMode.ScaleToFit);
 				GUI.Label(rect, new GUIContent(string.Empty, "Compilation Visualizer by\nneedle.tools"), GUIStyle.none);
 
 				UnityEditor.EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 				if (Event.current.type == EventType.MouseUp && rect.Contains(Event.current.mousePosition))
 					Application.OpenURL("https://needle.tools");
-				//EditorGUILayout.EndHorizontal();
 			}
 		}
 	}
