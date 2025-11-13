@@ -103,18 +103,23 @@ namespace Needle.Editors
 			float maxHeight = 15;
 			var logo = Assets.Logo;
 			if (logo)
-			{
-				var rect = GUILayoutUtility.GetRect(maxHeight+5, maxHeight);
+			{ 
+				//var rect = GUILayoutUtility.GetRect(maxHeight+5, maxHeight);
+				// WORKAROUND: use last rect instead of GetRect, GetRect causes an gui layout error on a fresh started editor
+				var rect = GUILayoutUtility.GetLastRect();
+				rect.x = rect.xMax - maxHeight - 5f;
+				
 				rect.height = maxHeight;
 				rect.y += 2f;
 				rect.width = maxHeight;
 				GUI.DrawTexture(rect, logo, ScaleMode.ScaleToFit);
 				GUI.Label(rect, new GUIContent(string.Empty, "Compilation Visualizer by\nneedle.tools"), GUIStyle.none);
-
+				
 				UnityEditor.EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
 				if (Event.current.type == EventType.MouseUp && rect.Contains(Event.current.mousePosition))
 					Application.OpenURL("https://needle.tools");
 			}
+		
 		}
 	}
 }
