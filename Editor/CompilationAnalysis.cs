@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
@@ -229,7 +230,36 @@ namespace Needle.CompilationVisualizer
                 var json = JsonUtility.ToJson(data, true);
                 EditorPrefs.SetString(EditorPrefStore, json);
             }
-
+            public static void SaveToFile()
+            {
+                var json = EditorPrefs.GetString(EditorPrefStore);
+                var path = EditorUtility.SaveFilePanel(
+                    "Save data as JSON",
+                    "",
+                    "CompilationData.json",
+                    "json");
+                if (path.Length != 0)
+                {
+                    File.WriteAllText(path, json);
+                }
+            }
+            public static void LoadFromFile()
+            {
+                var path = EditorUtility.OpenFilePanel(
+                    "Load data from JSON file",
+                    "",
+                    "json");
+                if (path.Length == 0) return;
+                try
+                {
+                    tempData = JsonUtility.FromJson<IterativeCompilationData>(File.ReadAllText(path));
+                    WriteAll(tempData);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error loading data {ex}");
+                }
+            }
             public void OnBeforeSerialize()
             {
                 compilationStarted = CompilationStarted;
@@ -250,6 +280,12 @@ namespace Needle.CompilationVisualizer
             {
                 // need to do a full clear in case a locked window wants to hold onto the old data
                 tempData = new IterativeCompilationData();
+            }
+
+            public static void ResetData()
+            {
+                tempData = new IterativeCompilationData();
+                WriteAll(tempData);
             }
 
             public static void Add()
