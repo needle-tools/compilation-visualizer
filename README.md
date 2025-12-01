@@ -1,6 +1,6 @@
 # Compilation Visualizer for Unity
 
-![Unity Version Compatibility](https://img.shields.io/badge/Unity-2018.4%20%E2%80%94%202022.1-brightgreen) [![openupm](https://img.shields.io/npm/v/com.needle.compilation-visualizer?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.needle.compilation-visualizer/)
+![Unity Version Compatibility](https://img.shields.io/badge/Unity-2019.4%20%E2%80%94%206000.3-brightgreen)
 
 ## What's this?
 This tool visualizes the assembly compilation process in Unity3D. It hooks into the Editor-provided events and nicely draws them on a timeline. That's especially helpful when trying to optimize compile times and dependencies between assemblies.  
@@ -10,23 +10,6 @@ Besides showing a graphical view of compilation, selecting an assembly shows bot
 The screenshots show full compilations; but the timeline works as well for partial compilations (e.g. you changed a single script and Unity only recompiles the relevant parts of the dependency chain).
 
 ## Quick Start
-
-Compilation Visualizer is available on OpenUPM: https://openupm.com/packages/com.needle.compilation-visualizer/  
-
-If you're on Unity 2019.4+:
-- open `Edit/Project Settings/Package Manager`
-- add a new Scoped Registry or add the package to the existing OpenUPM scope:
-  ```
-  Name: OpenUPM
-  URL:  https://package.openupm.com/
-  Scope(s): com.needle.compilation-visualizer
-  ```
-- click <kbd>Save</kbd>
-- open Package Manager
-- click <kbd>+</kbd>
-- select <kbd>Add from Git URL</kbd>
-- paste `com.needle.compilation-visualizer`
-- click <kbd>Add</kbd>.
 
 You can open the **Compilation Visualizer** by selecting `Window > Analysis > Compilation Timeline`. It will automatically update whenever something is compiled.  
 
@@ -56,7 +39,7 @@ Compilation Visualizer can run edit mode tests to ensure your project compiles o
 To use these tests, simply add it to the "testables" section in your project manifest.json:  
 ```
   "testables": [
-    "com.needle.compilation-visualizer"
+    "tools.needle.compilation-visualizer"
   ],
 ```
 
